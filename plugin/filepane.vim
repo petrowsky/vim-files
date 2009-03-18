@@ -1,0 +1,209 @@
+" File:   filepane.vim
+" Author: Michael Sanders (msanders42 [at] gmail [dot] com)
+" Description: A very simple file browser for *nix systems.
+
+if exists('s:did_filepane') || &cp || version < 700
+	finish
+endif
+let s:did_filepane = 1
+
+au WinLeave File\ List cal<SID>LeaveFilePane()
+au WinEnter File\ List cal<SID>ActivateFilePane()
+
+" Override netrw
+au VimEnter * sil! au! FileExplorer
+au BufEnter * cal<SID>CheckForDir(expand('<amatch>'))
+
+nn <silent> gL :cal<SID>ActivateFilePane()<cr>
+
+fun s:CheckForDir(dir)
+	if isdirectory(a:dir)
+		redraw! " Disable 'illegal filename' warning
+		exe 'cd'.s:EscapeName(a:dir)
+		call s:ActivateFilePane()
+	endif
+endf
+
+fun s:ActivateFilePane()
+	let s:opt = {} " Save current options.
+	let s:opt['is'] = &is | let s:opt['hls'] = &hls
+	set is nohls
+
+	" If filepane has already been opened, reactivate it.
+	if exists('s:filepaneBuffer') && bufexists(s:filepaneBuffer)
+		let filepaneWin = bufwinnr(s:filepaneBuffer)
+		if filepaneWin == -1
+			sil exe 'to vert sb '.s:filepaneBuffer
+			vert res 25
+			call s:UpdateFilePane()
+		elseif winbufnr(2) == -1
+			q " If no other windows are open, quit bufpane automatically.
+		else " If filepane is out of focus, bring it back into focus.
+			exe filepaneWin.'winc w'
+			vert res 25
+		endif
+	else " Otherwise, create the filepane.
+		sil call s:CreateFilePane()
+		call s:UpdateFilePane()
+	endif
+endf
+
+fun s:CreateFilePane()
+	if isdirectory(bufname('%')) " Delete directory buffer created by Vim
+		exe 'bw'.bufnr('%')
+	endif
+	to vnew
+	vert res 25
+
+	let s:sortPref = 0
+	let s:filepaneBuffer = bufnr('%')
+
+	f File\ List
+	setl bt=nofile bh=wipe noswf nobl nonu nowrap
+
+	if !exists('g:filepane_drawermode') || g:filepane_drawermode
+		setl bh=hide
+	endif
+
+	nn <silent> <buffer> s :cal<SID>TogglePref(0)<cr>
+	nn <silent> <buffer> x :cal<SID>CustomViewFile()<cr>
+	nn <silent> <buffer> l :cal<SID>PreviousWindow()<cr>
+	nm <silent> <buffer> . :cd ..<bar>cal<SID>UpdateFilePane()<cr>
+	nm <silent> <buffer> - :cd -<bar>cal<SID>UpdateFilePane()<cr>
+	nm <silent> <buffer> ~ :cd ~<bar>cal<SID>UpdateFilePane()<cr>
+	nn <silent> <buffer> <cr> :cal<SID>FilePaneSelect()<cr>
+	nn <buffer> r :cal<SID>UpdateFilePane()<cr>:ec "File list refreshed."<cr>
+	nn <buffer> q <c-w>q
+	nm <buffer> gL l
+	nm <buffer> p -
+	nm <buffer> h ~
+	nm <buffer> <leftmouse> <leftmouse><cr>
+
+	" Automatically opens file after performing search.
+	cno <silent> <buffer> <cr> <c-\>e<SID>Return(1)<cr><cr>:cal<SID>Return(0)<cr>
+
+	syn match filepaneDir '.*/$'
+	syn match filepaneExt '.*\.\zs.*$'
+
+	hi link filepaneDir Special
+	hi link filepaneExt Type
+endf
+
+fun s:Return(var)
+	if a:var
+		let s:command = getcmdtype()
+		return getcmdline()
+	elseif s:command =~ '/\|?'
+		let @/ = '' " Clear the last search pattern
+		call s:FilePaneSelect()
+	endif
+	unl s:command
+endf
+
+" Goes to previous window if it exists; otherwise,
+" tries to go to 'last' window.
+fun s:PreviousWindow()
+	exe winnr('#') != bufwinnr(s:filepaneBuffer) ? 'winc p' : winnr('$').'winc w'
+endf
+
+fun s:LeaveFilePane()
+	for option in keys(s:opt)
+		exe 'let &'.option.'='.s:opt[option]
+	endfor
+	unl s:opt
+	if !exists('g:filepane_drawermode') || g:filepane_drawermode
+		q
+	endif
+endf
+
+fun s:UpdateFilePane()
+	setl ma
+	let line = 2
+	let cursorLine = line('.')
+	sil 1,$ d_
+	call setline(1, '..')
+
+	" Move filepane's window to the left side & reset its width.
+	winc H | vert res 25
+
+	let firstFileLine = line
+	let lastFile = bufnr('$')
+	let currentDir = s:EscapeName(substitute(getcwd().'/', '//$', '/', ''))
+	let dirNameLen = len(currentDir)
+
+	for file in split(globpath(currentDir, '*'), "\n")
+		if isdirectory(file) | let file .= '/' | endif
+		call setline(line, strpart(file, dirNameLen))
+		let line += 1
+	endfor
+	let currentDir = substitute(currentDir, '^'.$HOME, '~', '')
+	let line -= firstFileLine
+	exe 'setl stl=%<'.currentDir.'%=%l'
+	ec '"'.currentDir.'" '.line.' item'.(line == 1 ? '' : 's')
+
+	if s:sortPref == 1
+		sil exe firstFileLine.',$sort /\d\+/'
+	elseif s:sortPref == 2
+		sil exe firstFileLine.',$sort /.*\./'
+	endif
+
+	call cursor(cursorLine, 1)
+	setl noma
+endf
+
+fun s:TogglePref(toggle)
+	if !a:toggle " Toggle sort
+		let s:sortPref = (s:sortPref + 1) % 3
+		setl ma
+		if s:sortPref == 1
+			ec 'Sorting by name.'
+			sil exe '2,$sort /\d\+/'
+		elseif s:sortPref == 2
+			ec 'Sorting by extension.'
+			sil exe '2,$sort /.*\./'
+		else
+			call s:UpdateFilePane()
+		endif
+		setl noma
+	endif
+endf
+
+fun s:SelectedFile()
+	let currentDir = substitute(getcwd().'/', '//$', '/', '')
+	return currentDir.getline('.')
+endf
+
+fun s:EscapeName(file)
+	return escape(a:file, ' \#')
+endf
+
+fun s:FilePaneSelect()
+	let file = s:SelectedFile()
+	if isdirectory(file)
+		exe 'cd'.s:EscapeName(file)
+		call s:UpdateFilePane()
+	elseif filereadable(file)
+		winc p | exe 'e '.s:EscapeName(file)
+	else
+		echo 'Could not read file '.file
+	endif
+endf
+
+fun s:CustomViewFile()
+	if !exists('g:filepane_viewer')
+		if !has('unix') | return | endif
+		if executable('gnome-open')
+			let g:filepane_viewer = 'gnome-open'
+		elseif executable('kfmclient')
+			let g:filepane_viewer = 'kfmclient'
+		elseif executable('open')
+			let g:filepane_viewer = 'open'
+		else
+			return
+		endif
+	endif
+	let file = s:SelectedFile()
+	sil exe '!'.g:filepane_viewer.' '.file
+	redraw! " Skip enter prompt
+endf
+" vim:noet:sw=4:ts=4:ft=vim
