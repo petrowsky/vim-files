@@ -68,36 +68,29 @@ fun s:CreateFilePane()
 	nn <silent> <buffer> s :cal<SID>TogglePref(0)<cr>
 	nn <silent> <buffer> x :cal<SID>CustomViewFile()<cr>
 	nn <silent> <buffer> l :cal<SID>PreviousWindow()<cr>
+	nn <silent> <buffer> R :cal<SID>RenameFile()<cr>
+	nn <silent> <buffer> D :cal<SID>DeleteFile()<cr>
+	nn <silent> <buffer> d :cal<SID>MakeDir()<cr>
+
 	nm <silent> <buffer> . :cd ..<bar>cal<SID>UpdateFilePane()<cr>
 	nm <silent> <buffer> - :cd -<bar>cal<SID>UpdateFilePane()<cr>
 	nm <silent> <buffer> ~ :cd ~<bar>cal<SID>UpdateFilePane()<cr>
 	nn <silent> <buffer> <cr> :cal<SID>FilePaneSelect()<cr>
-	nn <buffer> r :cal<SID>UpdateFilePane()<cr>:ec "File list refreshed."<cr>
+	nn <silent> <buffer> o :cal<SID>FilePaneSelect(1)<cr>
+	nn <silent> <buffer> O :cal<SID>FilePaneSelect(2)<cr>
+	nn <silent> <buffer> v :cal<SID>FilePaneSelect(3)<cr>
+	nn <buffer> <c-l> :cal<SID>UpdateFilePane()<cr>:ec "File list refreshed."<cr>
 	nn <buffer> q <c-w>q
 	nm <buffer> gL l
 	nm <buffer> p -
 	nm <buffer> h ~
 	nm <buffer> <leftmouse> <leftmouse><cr>
 
-	" Automatically opens file after performing search.
-	cno <silent> <buffer> <cr> <c-\>e<SID>Return(1)<cr><cr>:cal<SID>Return(0)<cr>
-
 	syn match filepaneDir '.*/$'
 	syn match filepaneExt '.*\.\zs.*$'
 
 	hi link filepaneDir Special
 	hi link filepaneExt Type
-endf
-
-fun s:Return(var)
-	if a:var
-		let s:command = getcmdtype()
-		return getcmdline()
-	elseif s:command =~ '/\|?'
-		let @/ = '' " Clear the last search pattern
-		call s:FilePaneSelect()
-	endif
-	unl s:command
 endf
 
 " Goes to previous window if it exists; otherwise,
@@ -177,16 +170,48 @@ fun s:EscapeName(file)
 	return escape(a:file, ' \#')
 endf
 
-fun s:FilePaneSelect()
+fun s:FilePaneSelect(...)
 	let file = s:SelectedFile()
 	if isdirectory(file)
 		exe 'cd'.s:EscapeName(file)
 		call s:UpdateFilePane()
 	elseif filereadable(file)
-		winc p | exe 'e '.s:EscapeName(file)
+		winc p
+		if a:0 && a:1 < 3
+			let splitbelow = &sb
+			exe 'let &sb = '.(a:1 == 1).' | sp | let &sb ='.splitbelow
+		elseif a:0 && a:1 == 3
+			vnew
+		endif
+		exe 'e'.s:EscapeName(file)
 	else
 		echo 'Could not read file '.file
 	endif
+endf
+
+fun s:RenameFile()
+	let file = s:SelectedFile()
+	call rename(file, input('Rename "'.strpart(file, strridx(file, '/') + 1).
+						\   '" to '))
+	sil call s:UpdateFilePane()
+endf
+
+fun s:DeleteFile()
+	let file = s:SelectedFile()
+	if isdirectory(file)
+		echo '"'.file.'" is a directory.'
+	elseif confirm('Delete file "'.file.'"?', "&Delete\n&Cancel", 2) == 1
+		redraw
+		echo 'File "'.file.'" '.(delete(file) ? 'could not be' : 'was').' deleted'
+		sil call s:UpdateFilePane()
+	endif
+endf
+
+fun s:MakeDir()
+	let dir = input('Create directory: ', '', 'file')
+	if dir == '' | return | endif
+	call mkdir(dir[:-1])
+	sil call s:UpdateFilePane()
 endf
 
 fun s:CustomViewFile()
