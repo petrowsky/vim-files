@@ -31,8 +31,9 @@
 " Cyan		#8996a8		#afc4db
 " White		#f8f8f8		#ffffff
 
-let colors_name = 'slate'
 set bg=dark
+hi clear
+let colors_name = 'slate'
 
 " General colors
 hi Normal		guifg=#f8f8f8	guibg=#12384b gui=none
