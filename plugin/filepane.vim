@@ -106,6 +106,8 @@ fun s:LeaveFilePane()
 	unl s:opt
 	if !exists('g:filepane_drawermode') || g:filepane_drawermode
 		q
+	else
+		unl s:bufpaneBuffer
 	endif
 endf
 

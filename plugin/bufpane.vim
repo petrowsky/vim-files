@@ -127,6 +127,8 @@ fun s:LeaveBufPane()
 	unl s:opt
 	if !exists('g:bufpane_drawermode') || g:bufpane_drawermode
 		q
+	else
+		unl s:bufpaneBuffer
 	endif
 endf
 
