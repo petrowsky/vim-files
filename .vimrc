@@ -219,8 +219,8 @@ fun! Align(regex) range
 	if blockmode
 		let old = @"
 		sil norm! gvy
-		let @" = old
 		let section = split(@", "\n")
+		let @" = old
 	else
 		let section = getline(a:firstline, a:lastline)
 	endif
