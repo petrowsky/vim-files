@@ -19,7 +19,7 @@ nn <silent> gL :cal<SID>ActivateFilePane()<cr>
 fun s:CheckForDir(dir)
 	if isdirectory(a:dir)
 		redraw! " Disable 'illegal filename' warning
-		exe 'cd'.s:EscapeName(a:dir)
+		exe 'cd'.fnameescape(a:dir)
 		call s:ActivateFilePane()
 	endif
 endf
@@ -86,8 +86,8 @@ fun s:CreateFilePane()
 	nm <buffer> h ~
 	nm <buffer> <leftmouse> <leftmouse><cr>
 
-	syn match filepaneDir '.*/$'
-	syn match filepaneExt '.*\.\zs.*$'
+	syn match filepaneDir '.*/$' display
+	syn match filepaneExt '.*\.\zs.*$' display
 
 	hi link filepaneDir Special
 	hi link filepaneExt Type
@@ -107,7 +107,7 @@ fun s:LeaveFilePane()
 	if !exists('g:filepane_drawermode') || g:filepane_drawermode
 		q
 	else
-		unl s:bufpaneBuffer
+		unl s:filepaneBuffer
 	endif
 endf
 
@@ -123,7 +123,7 @@ fun s:UpdateFilePane()
 
 	let firstFileLine = line
 	let lastFile = bufnr('$')
-	let currentDir = s:EscapeName(substitute(getcwd().'/', '//$', '/', ''))
+	let currentDir = fnameescape(substitute(getcwd().'/', '//$', '/', ''))
 	let dirNameLen = len(currentDir)
 
 	for file in split(globpath(currentDir, '*'), "\n")
@@ -168,14 +168,10 @@ fun s:SelectedFile()
 	return currentDir.getline('.')
 endf
 
-fun s:EscapeName(file)
-	return escape(a:file, ' \#')
-endf
-
 fun s:FilePaneSelect(...)
 	let file = s:SelectedFile()
 	if isdirectory(file)
-		exe 'cd'.s:EscapeName(file)
+		exe 'cd'.fnameescape(file)
 		call s:UpdateFilePane()
 	elseif filereadable(file)
 		winc p
@@ -185,7 +181,7 @@ fun s:FilePaneSelect(...)
 		elseif a:0 && a:1 == 3
 			vnew
 		endif
-		exe 'e'.s:EscapeName(file)
+		exe 'e'.fnameescape(file)
 	else
 		echo 'Could not read file '.file
 	endif
