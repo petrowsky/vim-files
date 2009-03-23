@@ -35,8 +35,13 @@ endf
 
 " Deletes pair mapped by closepair.vim for the current buffer.
 fun! DeletePair(char, ...)
+	if !exists('b:pairs') | let b:pairs = s:pairs | endif
 	exe 'ino <buffer> '.a:char.' '.a:char
-	if a:0 | exe 'ino <buffer> '.a:1.' '.a:1 | endif
+	if has_key(b:pairs, a:char) | unl b:pairs[a:char] | endif
+	if a:0
+		exe 'ino <buffer> '.a:1.' '.a:1
+		if has_key(b:pairs, a:1) | unl b:pairs[a:1] | endif
+	endif
 endf
 
 call AddPair('(', ')')
@@ -68,16 +73,17 @@ fun s:ClosePair(char)
 	return a:char
 endf
 
-fun s:InStringOrComment()
-	return synIDattr(synID(line('.'), col('.')-1, 0), 'name') =~? 'omment\|string'
+fun s:InStringOrComment(col)
+	return synIDattr(synID(line('.'), a:col, 0), 'name') =~? 'omment\|string'
 endf
 
 " Automatically remove the entire autocompletion when the opening character
 " is deleted & there are no characters in between.
 fun s:RemovePair()
-	let chars = strpart(getline('.'), col('.') - 2, 2)
+	let col = col('.') - 2
+	let chars = strpart(getline('.'), col, 2)
 	let pairs = exists('b:pairs') ? b:pairs : s:pairs
-	if (chars != "''" || !s:InStringOrComment()) && has_key(pairs, chars[1])
+	if (chars != "''" || !s:InStringOrComment(col)) && has_key(pairs, chars[1])
 		\ && match(maparg(chars[0], 'i'),
 				\ '\c<C-R>=<SNR>\d\+_\(OpenPair\|PairQuote\)') != -1
 		return "\<del>\<bs>"
@@ -106,7 +112,7 @@ fun s:PairQuote(char)
 	let col = col('.') - 1 | let line = getline('.')
 	let currentChar = line[col] | let prevChar = line[col-1]
 	" Treat single quotes inside commands and strings as apostrophes.
-	if a:char == "'" && currentChar != "'" && s:InStringOrComment()
+	if a:char == "'" && currentChar != "'" && s:InStringOrComment(col)
 		return "'"
 	endif
 
