@@ -84,6 +84,8 @@ no "- "_
 no gp "0p
 no gP "0P
 
+" Q: is a very annoying typo
+nn Q <Nop>
 " gj/gk treat wrapped lines as separate
 " (i.e. you can move up/down in one wrapped line)
 nn j gj
@@ -109,7 +111,7 @@ nn ,W <c-w>w
 nn ,n :vnew<cr>
 nn ,w :w<cr>
 nn ,x :x<cr>
-" Switch to alternate window (mnemonic: ,alt)
+" Switch to alternate window (mnemonic: ,alternate)
 nn ,a <c-^>
 nn ,o <c-o>
 " Vimshell keybindings
@@ -164,7 +166,7 @@ xno <bs> "_x
 xno gn :<c-u>cal <SID>CountChars()<cr>
 
 " Easier navigation in insert mode
-ino <silent> <c-b> <esc>bi
+ino <silent> <c-b> <c-o>b
 ino <silent> <c-f> <esc>ea
 ino <c-h> <left>
 ino <c-l> <right>
@@ -252,6 +254,24 @@ fun! AlignLine(line, sep, maxpos)
 	return empty(m) ? a:line : m[1].repeat(' ', a:maxpos - strlen(m[1])+1).m[2]
 endf
 
+" Cycle through paste buffers
+nn <silent> <c-\> :cal <SID>Cycle()<cr>
+fun s:Cycle()
+	if !exists('s:cycling')
+		let s:cycling = 0 | let s:pasteBuf = 0
+	endif
+	if s:cycling
+		sil! norm! u
+	endif
+	let s:cycling = 1
+	exe 'norm! "'.s:pasteBuf.'p'
+	if s:pasteBuf == 9
+		let s:pasteBuf = 0
+	else
+		let s:pasteBuf += 1
+	endif
+endf
+
 fun! s:RemoveWhitespace()
 	if stridx(&ft, 'snippets') != -1 | return | endif
 	if &bin | return | endif
@@ -302,7 +322,7 @@ endf
 if &cp | fini | en " Vi-compatible mode doesn't seem to like autocommands
 aug vimrc_autocmds
 	au!
-	au BufWritePre * sil cal<SID>RemoveWhitespace()
+	" au BufWritePre * sil cal<SID>RemoveWhitespace()
 
 	au FileType c,objc,python,html,xhtml,xml nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
 	" Look up documentation for current word under cursor
