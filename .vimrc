@@ -254,7 +254,7 @@ fun! AlignLine(line, sep, maxpos)
 	return empty(m) ? a:line : m[1].repeat(' ', a:maxpos - strlen(m[1])+1).m[2]
 endf
 
-" Cycle through paste buffers
+" Cycle through paste registers
 nn <silent> <c-\> :cal <SID>Cycle()<cr>
 fun s:Cycle()
 	if !exists('s:cycling')
