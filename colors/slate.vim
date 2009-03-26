@@ -1,11 +1,11 @@
-" Author: Michael Sanders (msanders42 [at] gmail [dot] com)
-" Description: Slate colorscheme, adopted from TextMate
-" Usage: This colorscheme is meant only for use with vim in Terminal.app or
-"        gvim. I haven't tested it in other terminals. To get it to work in
-"        Terminal.app, install TerminalColors
-"        (http://www.culater.net/software/TerminalColors/TerminalColors.php)
-"        and use this theme I made to go along with this color scheme:
-"        http://msanders.homeip.net/Slate.terminal
+" Author:      Michael Sanders (msanders42 [at] gmail [dot] com)
+" Description: Slate colorscheme, adopted from TextMate.
+" Usage:       This colorscheme is meant only for use with vim in Terminal.app or
+"              gvim. I haven't tested it in other terminals. To get it to work in
+"              Terminal.app, first install TerminalColors
+"              (http://www.culater.net/software/TerminalColors/TerminalColors.php)
+"              and use this theme I made to go along with this color scheme:
+"              http://msanders.homeip.net/Slate.terminal
 
 " The following are the preferred 16 colors for Terminal.app:
 "
@@ -21,14 +21,13 @@
 
 " These are the modified colors for this theme:
 " 			Colors		Bright Colors
-" Black		#0e2231		#b0b3ba (#0e2231 is used solely for highlighting the
-" 								 current line)
-" Red		#d8290d		#ff3a83
-" Green		#78df51		#9df39f
-" Yellow	#eee940		#f6f080
-" Blue		#1e9ae0		#9effff
-" Magenta	#f4a934		#f1994a (magenta == orange now)
-" Cyan		#8996a8		#afc4db
+" Black		#0e2231		#afb2ba (#0e2231 is used solely for highlighting lines)
+" Red		#ed1600		#f0357d
+" Green		#55e439		#84f796
+" Yellow	#eceb00		#f5f16e
+" Blue		#009be7		#84ffff
+" Magenta	#ffa705		#f1994a (magenta == orange now)
+" Cyan		#8696aa		#abc4dd
 " White		#f8f8f8		#ffffff
 
 set bg=dark
@@ -37,50 +36,50 @@ let colors_name = 'slate'
 
 " General colors
 hi Normal		guifg=#f8f8f8	guibg=#12384b gui=none
-hi NonText		guifg=#9effff	gui=none					ctermfg=blue
+hi NonText		guifg=#84ffff	gui=none					ctermfg=blue
 
 hi Cursor		guifg=NONE		guibg=#8ba7a7
-hi LineNr		guifg=#b0b3ba	gui=bold					ctermfg=darkgray				cterm=bold
+hi LineNr		guifg=#afb2ba	gui=bold					ctermfg=darkgray				cterm=bold
 
 hi VertSplit	guifg=#f8f8f8	guibg=#0e2231	gui=none	ctermfg=gray	ctermbg=black	cterm=none
 
-hi Visual		guibg=#afc4db	ctermbg=cyan
+hi Visual		guibg=#abc4dd	ctermbg=cyan
 
-hi WildMenu		guifg=#0e2231	guibg=#b0b3ba	ctermfg=black	ctermbg=gray
-hi ErrorMsg		guifg=#f8f8f8	guibg=#d8290d	gui=bold		ctermfg=gray	ctermbg=darkred	cterm=bold
-hi WarningMsg	guifg=#f6f080	guibg=#0e2231	gui=bold		ctermfg=yellow	ctermbg=black cterm=bold
+hi WildMenu		guifg=#0e2231	guibg=#afb2ba	ctermfg=black	ctermbg=gray
+hi ErrorMsg		guifg=#f8f8f8	guibg=#ed1600	gui=bold		ctermfg=gray	ctermbg=darkred	cterm=bold
+hi WarningMsg	guifg=#f5f16e	guibg=#0e2231	gui=bold		ctermfg=yellow	ctermbg=black   cterm=bold
 
-hi ModeMsg		guifg=#b0b3ba	guibg=#0e2231	gui=bold		ctermfg=gray	ctermbg=black	cterm=bold
+hi ModeMsg		guifg=#afb2ba	guibg=#0e2231	gui=bold		ctermfg=gray	ctermbg=black	cterm=bold
 
 if version >= 700 " Vim 7 specific colors
   hi CursorLine		guibg=#0e2231									ctermbg=black	cterm=none
   hi! link CursorColumn CursorLine
-  hi MatchParen		guifg=#0e2231	guibg=#b0b3ba	ctermfg=black	ctermbg=gray
+  hi MatchParen		guifg=#0e2231	guibg=#afb2ba	ctermfg=black	ctermbg=gray
   hi Search			guifg=NONE		guibg=NONE		gui=inverse		ctermfg=none	ctermbg=none	cterm=inverse
 en
 
 hi Pmenu			guifg=#000000	guibg=#f8f8f8				ctermfg=black		ctermbg=gray
-hi PmenuSbar		guifg=#8996a8	guibg=#f8f8f8	gui=none	ctermfg=darkcyan	ctermbg=gray	 cterm=none
-hi PmenuThumb		guifg=#f8f8f8	guibg=#8996a8	gui=none	ctermfg=gray		ctermbg=darkcyan cterm=none
+hi PmenuSbar		guifg=#8696aa	guibg=#f8f8f8	gui=none	ctermfg=darkcyan	ctermbg=gray	 cterm=none
+hi PmenuThumb		guifg=#f8f8f8	guibg=#8696aa	gui=none	ctermfg=gray		ctermbg=darkcyan cterm=none
 
 " Syntax highlighting
-hi Comment			guifg=#1e9ae0	gui=italic		ctermfg=darkblue
-hi String			guifg=#78df51					ctermfg=darkgreen
-hi Number			guifg=#ff3a83					ctermfg=red
+hi Comment			guifg=#009be7	gui=italic		ctermfg=darkblue
+hi String			guifg=#55e439					ctermfg=darkgreen
 
-hi Keyword			guifg=#f4a934					ctermfg=darkmagenta
+hi Keyword			guifg=#ffa705					ctermfg=darkmagenta
 hi PreProc			guifg=#f1994a					ctermfg=magenta
 
-hi Todo				guifg=#afc4db	guibg=NONE		ctermfg=cyan	ctermbg=none
-hi Constant			guifg=#ff3a83					ctermfg=red
+hi Todo				guifg=#abc4dd	guibg=NONE		ctermfg=cyan	ctermbg=none
+hi Constant			guifg=#f0407d					ctermfg=red
 
 hi Identifier		guifg=#f1994a					ctermfg=magenta	cterm=none
-hi Type				guifg=#f6f080	gui=none		ctermfg=yellow
+hi Type				guifg=#f5f16e	gui=none		ctermfg=yellow
 hi Statement		guifg=#f1994a	gui=none		ctermfg=magenta
 
-hi Special			guifg=#9df39f					ctermfg=green
+hi Special			guifg=#84f796					ctermfg=green
 hi Delimiter		guifg=#f1994a	gui=none		ctermfg=magenta
 
+hi  link Number         Constant
 hi! link StatusLine     VertSplit
 hi! link StatusLineNC   VertSplit
 hi! link Identifier     Function
@@ -148,7 +147,7 @@ hi link cssColor			Type
 hi link cssValueInteger		Type
 hi link cssValueNumber		Type
 hi link cssValueLength		Type
-hi cssPseudoClassId guifg=#eee940 ctermfg=darkyellow
+hi cssPseudoClassId guifg=#eceb00 ctermfg=darkyellow
 
 hi clear SpellBad
 hi SpellBad ctermfg=red term=underline cterm=underline
@@ -158,3 +157,4 @@ hi clear SpellRare
 hi SpellRare term=underline cterm=underline
 hi clear SpellLocal
 hi SpellLocal term=underline cterm=underline
+" vim:noet:sw=4:ts=4:ft=vim
