@@ -16,7 +16,6 @@ set nobk nowb noswf " Disable backup
 " Enable command-line tab completion & hide irrelevant matches
 set wim=full wmnu wig+=*.o,*.obj,*.pyc,*.DS_Store,*.db
 set sb " Open new split windows below current
-set smc=300 " Disable syntax highlighting on long lines
 set gd " Assume /g flag on :s searches
 set nofen fdm=indent " Close folds by default & create folds at every indent
 set hid " Allow hidden buffers
@@ -39,7 +38,7 @@ set ai ts=4 sw=4
 " Theme
 set t_Co=16 " Enable 16 colors
 syn on | colo slate " My color scheme, adopted from TextMate
-set cul hls " Highlight current line & search terms
+set hls " Highlight search terms
 if &diff | syn off | en " Turn syntax highlighting off for diff
 
 " Plugin Settings
