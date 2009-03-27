@@ -39,9 +39,9 @@ fun AddSurround(type, ...)
 		call setline("'>", getline("'>").strpart(chars, half))
 	else
 		let old = @"
-		norm! gvs
+		norm! gvc
 		let @" = s:Wrap(@", char)
-		norm! p
+		exe 'norm! '.(col('.') == 1 ? 'P' : 'p')
 		let @" = old
 	endif
 
