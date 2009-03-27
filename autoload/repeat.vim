@@ -25,41 +25,41 @@
 " Make sure to call the repeat#set fun _after_ making changes to the
 " file.
 
-if exists("g:loaded_repeat") || &cp || v:version < 700
+if exists('g:loaded_repeat') || &cp || v:version < 700
     finish
 endif
 let g:loaded_repeat = 1
 let g:repeat_tick = -1
 
-fun! repeat#set(sequence,...)
+fun! repeat#set(sequence, ...)
     sil exe "norm! \"=''\<CR>p"
     let g:repeat_sequence = a:sequence
     let g:repeat_count = a:0 ? a:1 : v:count
     let g:repeat_tick = b:changedtick
 endf
 
-fun! s:repeat(count)
+fun! s:Repeat()
     if g:repeat_tick == b:changedtick
         let c = g:repeat_count
-        let cnt = c == -1 ? "" : (a:count ? a:count : (c ? c : ''))
+        let cnt = c == -1 ? "" : (v:count ? v:count : (c ? c : ''))
         call feedkeys(cnt.g:repeat_sequence)
     else
-        call feedkeys((a:count ? a:count : '') . '.', 'n')
+        call feedkeys((v:count ? v:count : '') . '.', 'n')
     endif
 endf
 
-fun! s:wrap(command,count)
+fun! s:Wrap(command)
     let preserve = (g:repeat_tick == b:changedtick)
-    exe 'norm! '.(a:count ? a:count : '').a:command
+    exe 'norm! '.(v:count ? v:count : '').a:command
     if preserve
         let g:repeat_tick = b:changedtick
     endif
 endf
 
-no <silent> .     :<c-u>call <SID>repeat(v:count)<cr>
-no <silent> u     :<c-u>call <SID>wrap('u',v:count)<cr>
-no <silent> U     :<c-u>call <SID>wrap('U',v:count)<cr>
-no <silent> <c-r> :<c-u>call <SID>wrap("\<lt>C-R>",v:count)<cr>
+no <silent> .     :<c-u>cal<SID>Repeat()<cr>
+no <silent> u     :<c-u>cal<SID>Wrap('u')<cr>
+no <silent> U     :<c-u>cal<SID>Wrap('U')<cr>
+no <silent> <c-r> :<c-u>cal<SID>Wrap("\<lt>C-R>")<cr>
 
 au BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (g:repeat_tick == b:changedtick || g:repeat_tick == 0) ? 0 : -1
 au BufEnter,BufWritePost * if g:repeat_tick == 0|let g:repeat_tick = b:changedtick|endif
