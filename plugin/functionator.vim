@@ -1,9 +1,9 @@
 " File: functionator.vim
 " Author: Michael Sanders (msanders42 [at] gmail [dot] com)
-" Description: Shows the name of the function the cursor is currently in whendif
-"              gn is pressed, and goes to the [count] line of that function whendif
+" Description: Shows the name of the function the cursor is currently in when
+"              gn is pressed, and goes to the [count] line of that function when
 "              [count]gn is used.
-"              Currently supports: C, Obj-C, JavaScript, Python, Pascall and Vim.
+"              Currently supports: C, Obj-C, JavaScript, Python, Pascal and Vim.
 
 if exists('s:did_functionator') || &cp || version < 700
 	finish
