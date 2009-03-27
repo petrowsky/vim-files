@@ -23,6 +23,7 @@ set tm=500 " Lower timeout for mappings
 set enc=utf-8
 set cot=menu " Don't show extra info on completions
 set report=0 " Always report when lines are changed
+set mouse=a " Enable mouse support
 
 if has('gui_running')
 	" Disable blinking cursor & default menus in gvim, and set font to
@@ -130,7 +131,7 @@ nn <silent> ,# :se invnumber<cr>
 nn ,H :cal <SID>ToggleLongLineHL()<cr>
 " Turn off search highlighting
 nn <silent> <c-n> :noh<cr>
-" List trailing whitespace
+" List whitespace
 nn <silent> ,<space>  :se nolist!<cr>
 nn <silent> ,R :cal<SID>RemoveWhitespace()<cr>
 " Reload .vimrc
@@ -178,8 +179,10 @@ im <down> <c-n>
 ino <c-k> <c-o>D
 " Much easier than reaching for escape
 ino jj <esc>
-" Open/close completion menu
+" Open/close keyword completion menu
 ino <expr> jx pumvisible() ? '<esc>a' : '<c-p>'
+" Open/close omnicompletion menu
+ino <expr> jX pumvisible() ? '<esc>a' : '<c-x><c-o>'
 " Insert a newline & keep cursor position
 ino <silent> <c-j> <c-o>:cal append('.', '')<cr>
 
@@ -253,8 +256,8 @@ fun! AlignLine(line, sep, maxpos)
 	return empty(m) ? a:line : m[1].repeat(' ', a:maxpos - strlen(m[1])+1).m[2]
 endf
 
-" Cycle through paste registers
-nn <silent> <c-\> :cal <SID>Cycle()<cr>
+" Cycle through paste buffers
+nn <silent> <c-\> :cal<SID>Cycle()<cr>
 fun s:Cycle()
 	if !exists('s:cycling')
 		let s:cycling = 0 | let s:pasteBuf = 0
@@ -319,15 +322,17 @@ fun! s:FileExecutable (fname)
 endf
 
 if &cp | fini | en " Vi-compatible mode doesn't seem to like autocommands
-aug vimrc_autocmds
+aug vimrc
 	au!
 	" au BufWritePre * sil cal<SID>RemoveWhitespace()
 
-	au FileType c,objc,python,html,xhtml,xml nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
+	au FileType c,objc,python,scheme,html,xhtml,xml
+				\ nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
 	" Look up documentation for current word under cursor
 	au FileType c,objc,sh nn <buffer> <silent> <c-k> :cal <SID>Bwana()<cr>
 	" Shortcut for typing a semicolon at the end of a line
 	au FileType c,objc,cpp ino <buffer> <silent> ;; <c-o>:cal setline('.', getline('.').';')<cr>
+						\| setl omnifunc=ccomplete#Complete
 	au FileType c nn <buffer> <silent> ,A :exe 'e '.expand('%:p:r').'.'.(expand('%:e') == 'c' ? 'h' : 'c')<cr>
 
 	" compile.sh is a simple shell script I made for compiling a C/Objc
@@ -340,7 +345,11 @@ aug vimrc_autocmds
 	" Functions for converting plist files (can be binary but have xml syntax)
 	au BufReadPre,FileReadPre *.plist set bin | so ~/.vim/scripts/read_plist.vim
 
-	au FileType python setl et makeprg=python\ -t\ \"%:p\"
+	au FileType scheme setl et sts=2 makeprg=mzscheme\ -r\ \"%:p\"
+					\| ino jl <esc>f)a
+	au FileType python setl et sts=4 makeprg=python\ -t\ \"%:p\"
+
+	au FileType javascript setl omnifunc=javascriptcomplete#CompleteJS
 
 	" Automatically make shell & python scripts executable if they aren't already
 	" when saving file
@@ -359,6 +368,7 @@ aug vimrc_autocmds
 							\| vno <buffer> <c-e> c<em></em><esc>5hp
 							\| setl mp=xmllint\ --valid\ --noout\ %
 							\  errorformat=%f:%l:\ %m
+							\| setl omnifunc=htmlcomplete#CompleteTags
 
 	" Look up documentation under :help instead of man for .vim files
 	au FileType vim,help let&l:kp=':help'
