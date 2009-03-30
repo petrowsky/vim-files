@@ -44,13 +44,13 @@ fun s:MatchBracket()
 	" Don't wrap if inside or directly outside a string
 	let char = matchstr(beforeCursor, '\S\ze\S*\s*\%'.col.'c')
 	" Only wrap past "return" if it's given
-	let return = matchend(beforeCursor, '.*return')
+	let return = matchend(beforeCursor, '.*return\s*')
 
 	" If the line is blank or there is already an opening bracket, don't
 	" autocomplete.
-	if beforeCursor =~ '^\s*$' || char == '"' || char == "'"
+	if beforeCursor =~ '^\s*\S\=$' || char == '"' || char == "'"
 					\ || s:Count(line, '[') > s:Count(line, ']')
-					\ || (return && strpart(line, col - 2, 2) =~ '\s\(\s\|\w\)')
+					\ || col - return < 2
 		return ']'
 	" Escape out of string when bracket is the next character, unless
 	" wrapping past an equals sign or inserting a closing bracket.
