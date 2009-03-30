@@ -1,6 +1,6 @@
 " File:        objc_matchbracket.vim
 " Author:      Michael Sanders (msanders42 [at] gmail [dot] com)
-" Version:     0.2
+" Version:     0.3
 " Description: TextMate's "Insert Matching Start Bracket" feature implemented
 "              in vim script. Makes it a lot more pleasant to write Objective-C.
 " Usage:       Just type "]" in insert mode after an object or method you want to
@@ -41,9 +41,9 @@ fun s:MatchBracket()
 	" E.g., "foo = bar" becomes "foo = [bar ]", and "[foo = bar]" becomes
 	" "[foo = [bar ]]"
 	let equalsCol = matchend(beforeCursor, '\[\w*\s*=')
-	" Don't wrap if inside or directly outside a string
+	" Don't wrap if inside or directly outside a string.
 	let char = matchstr(beforeCursor, '\S\ze\S*\s*\%'.col.'c')
-	" Only wrap past "return" if it's given
+	" Only wrap past "return" if it's given.
 	let return = matchend(beforeCursor, '.*return\s*')
 
 	" If the line is blank or there is already an opening bracket, don't
@@ -53,15 +53,15 @@ fun s:MatchBracket()
 					\ || col - return < 2
 		return ']'
 	" Escape out of string when bracket is the next character, unless
-	" wrapping past an equals sign or inserting a closing bracket.
+	" wrapping past an equals sign or inserting a closing bracket
 	elseif line[col] == ']' && !(equalsCol > -1 &&
 		\ s:Count(beforeCursor, '[') == s:Count(beforeCursor, ']') + 1)
 		return "\<right>"
 	else
 		" If there are more closing parentheses or braces than opening
-		" ones, (or vice versa) only autocomplete past the last one.
-		" (This is very helpful when autocompleting after loops or closing
-		" braces, or within conditionals.)
+		" ones, (or vice versa) only autocomplete past the last one
+		" (this is very helpful when autocompleting after loops or closing
+		" braces, or within conditionals)
 		let parenCol = (s:Count(beforeCursor, '(') > s:Count(beforeCursor, ')')
 				\ ? strridx(beforeCursor, '(') : strridx(beforeCursor, ')')) + 1
 		let braceCol = (s:Count(beforeCursor, '{') > s:Count(beforeCursor, '}')
@@ -95,6 +95,9 @@ fun s:MatchBracket()
 
 		let startCol += semiPos " Autocomplete past semicolon, if it exists.
 		if startCol
+			if strpart(beforeCursor, startCol) !~ '\w\w\+'
+				return ']'
+			endif
 			exe 'norm! i'.space.']'
 			call cursor(lnum, startCol)
 			exe 'norm! wi['
