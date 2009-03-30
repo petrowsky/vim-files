@@ -62,10 +62,10 @@ fun s:MatchBracket()
 		" ones, (or vice versa) only autocomplete past the last one.
 		" (This is very helpful when autocompleting after loops or closing
 		" braces, or within conditionals.)
-		let parenCol = s:Count(beforeCursor, '(') > s:Count(beforeCursor, ')')
-				\ ? strridx(beforeCursor, '(') : strridx(beforeCursor, ')') + 1
-		let braceCol = s:Count(beforeCursor, '{') > s:Count(beforeCursor, '}')
-				\ ? strridx(beforeCursor, '{') : strridx(beforeCursor, '}') + 1
+		let parenCol = (s:Count(beforeCursor, '(') > s:Count(beforeCursor, ')')
+				\ ? strridx(beforeCursor, '(') : strridx(beforeCursor, ')')) + 1
+		let braceCol = (s:Count(beforeCursor, '{') > s:Count(beforeCursor, '}')
+				\ ? strridx(beforeCursor, '{') : strridx(beforeCursor, '}')) + 1
 
 		let startCol = parenCol > braceCol ? parenCol : braceCol
 		if return > startCol | let startCol = return | endif
