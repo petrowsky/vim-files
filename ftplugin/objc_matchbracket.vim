@@ -56,7 +56,8 @@ fun s:MatchBracket()
 	" wrapping past an equals sign or inserting a closing bracket
 	elseif line[col] == ']' && !(equalsCol > -1 &&
 		\ s:Count(beforeCursor, '[') == s:Count(beforeCursor, ']') + 1)
-		return "\<right>"
+		call setline(lnum, substitute(line, '\%'.(col + 1).'c.', '', ''))
+		return ']'
 	else
 		" If there are more closing parentheses or braces than opening
 		" ones, (or vice versa) only autocomplete past the last one
