@@ -24,8 +24,8 @@ fun s:GetFuncName(ft)
 	" NOTE: This doesn't work for nested functions, I need to figure out how to
 	" fix it
 	elseif a:ft == 'python'
-		let funBegin = search('^\s*def', 'bWcen')
-		let funEnd = search('^\s\+$', 'n')
+		let funBegin = search('^def', 'bWcen')
+		let funEnd = search('^\S', 'n')
 		if funBegin && funEnd > line
 			return [substitute(getline(funBegin), '^\s*def\s*\(\w\+\s*(.*)\):', '\1', ''), (line - funBegin)]
 		endif
