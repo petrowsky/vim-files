@@ -9,7 +9,7 @@ set titlestring=%f title " Display filename in terminal window
 set ruf=%l:%c ru " Display current column/line in bottom right
 set sc " Show incomplete command at bottom right
 set bs=2 " Allow backspacing over anything
-set wrap lbr pt=<f2> spl=en_us
+set wrap lbr pt=<f2>
 set ic scs " Only be case sensitive when search contains uppercase
 ru macros/matchit.vim " Enabled extended % matching
 set nobk nowb noswf " Disable backup
@@ -17,19 +17,19 @@ set nobk nowb noswf " Disable backup
 set wim=full wmnu wig+=*.o,*.obj,*.pyc,*.DS_Store,*.db
 set sb " Open new split windows below current
 set gd " Assume /g flag on :s searches
-set nofen fdm=indent " Close folds by default & create folds at every indent
 set hid " Allow hidden buffers
 set tm=500 " Lower timeout for mappings
-set enc=utf-8
 set cot=menu " Don't show extra info on completions
 set report=0 " Always report when lines are changed
 set mouse=a " Enable mouse support
+set enc=utf-8
 
 if has('gui_running')
 	" Disable blinking cursor & default menus in gvim, and set font to
 	" I've also defined some custom menus in my .gvimrc.
 	set gcr=a:blinkon0 go=haMR
-	set columns=100 lines=25 fuoptions=maxvert,maxhorz
+	set columns=100 lines=38 fuoptions=maxvert,maxhorz
+	ino <d-i> <tab>
 endif
 
 " Indentation
@@ -40,11 +40,12 @@ set ai ts=4 sw=4
 set t_Co=16 " Enable 16 colors
 syn on | colo slate " My color scheme, adopted from TextMate
 set hls " Highlight search terms
-if &diff | syn off | en " Turn syntax highlighting off for diff
+if &diff | syn off | endif " Turn syntax highlighting off for diff
 
 " Plugin Settings
 let snips_author = 'Michael Sanders'
 let bufpane_showhelp = 0
+ino <s-tab> <c-p>
 
 " Correct some spelling mistakes
 ia teh the
@@ -60,6 +61,7 @@ ia foreahc foreach
 ia !+ !=
 ca eariler earlier
 ca !+ !=
+ca ~? ~/
 
 " Mappings
 let mapleader = ','
@@ -100,7 +102,7 @@ nn Y y$
 nn + <c-a>
 nn - <c-x>
 " Add a blank line while keeping cursor position
-nn <silent> <c-o> :cal append('.', '')<cr>:sil! cal repeat#set("\<c-o>")<cr>
+nn <silent> <c-o> :cal append('.', '')<bar>sil! cal repeat#set("\<c-o>")<cr>
 " Make space toggle folds
 nn <space> zA
 nn <m-space> za
@@ -123,12 +125,10 @@ endif
 nn ,S :sh<cr>
 " Switch to current dir
 nn ,d :lcd %:p:h<cr>
-" Toggle spell checking
-nn <silent> ,D :se spell!<cr>
 " Hide/show line numbers (useful for copying & pasting)
 nn <silent> ,# :se invnumber<cr>
 " Highlight/unhighlight lines over 80 columns
-nn ,H :cal <SID>ToggleLongLineHL()<cr>
+nn ,H :cal<SID>ToggleLongLineHL()<cr>
 " Turn off search highlighting
 nn <silent> <c-n> :noh<cr>
 " List whitespace
@@ -158,24 +158,25 @@ xno m $h
 " Pressing v again brings you out of visual mode
 xno v <esc>
 " * and # search for next/previous of selected text when used in visual mode
-xno * :<c-u>cal <SID>VisualSearch()<cr>/<cr>
-xno # :<c-u>cal <SID>VisualSearch()<cr>?<cr>
+xno * :<c-u>cal<SID>VisualSearch()<cr>/<cr>
+xno # :<c-u>cal<SID>VisualSearch()<cr>?<cr>
 " Pressing backspace in visual mode deletes to black hole register
 xno <bs> "_x
 " Pressing gn in visual mode counts characters in selection
-xno gn :<c-u>cal <SID>CountChars()<cr>
+xno gn :<c-u>cal<SID>CountChars()<cr>
 
 " Easier navigation in insert mode
 ino <silent> <c-b> <c-o>b
 ino <silent> <c-f> <esc>ea
 ino <c-h> <left>
 ino <c-l> <right>
-" <c-p> & <c-n> will move up/down if popup menu not
-" up; otherwise, they will select items in the menu
-ino <expr> <c-p> pumvisible() ? '<c-p>' : '<c-o>gk'
-ino <expr> <c-n> pumvisible() ? '<c-n>' : '<c-o>gj'
-im <up> <c-p>
-im <down> <c-n>
+" <c-p> & <c-n> will move/up and down if popup menu is not visible.
+ino <expr> <c-p> getline('.')[col('.')-2] =~ '\w' ? '<c-p>' : '<up>'
+ino <expr> <c-n> getline('.')[col('.')-2] =~ '\w' ? '<c-n>' : '<down>'
+" <up> & <down> will move up/down if popup menu not up; otherwise, 
+" they will select items in the menu
+ino <expr> <up> pumvisible() ? '<c-p>' : '<c-o>gk'
+ino <expr> <down> pumvisible() ? '<c-n>' : '<c-o>gj'
 ino <c-k> <c-o>D
 " Much easier than reaching for escape
 ino jj <esc>
@@ -183,8 +184,6 @@ ino jj <esc>
 ino <expr> jx pumvisible() ? '<esc>a' : '<c-p>'
 " Open/close omnicompletion menu
 ino <expr> jX pumvisible() ? '<esc>a' : '<c-x><c-o>'
-" Insert a newline & keep cursor position
-ino <silent> <c-j> <c-o>:cal append('.', '')<cr>
 
 hi OverLength ctermbg=none cterm=none
 match OverLength /\%>80v/
@@ -301,6 +300,15 @@ fun! s:Bwana()
 	endif
 endf
 
+fun s:AlternateFile(ext)
+	let path = expand('%:p:r').'.'.(expand('%:e') == a:ext ? 'h' : a:ext)
+	if filereadable(path)
+		exe 'e'.path
+	else
+		echoh ErrorMsg | echo 'Alternate file not readable.' | echoh None
+	endif
+endf
+
 " Lets you make a session for a directory by typing :mks
 " Then restore it by going back to that directory, opening Vim
 " and typing :LoadSession.
@@ -316,39 +324,36 @@ endf
 au VimLeave * call <SID>SaveSession()
 
 " Tells whether file is executable (used for shell script autocommands).
-fun! s:FileExecutable (fname)
+fun! s:FileExecutable(fname)
   exe 'sil! !test -x' a:fname
   return v:shell_error
 endf
 
-if &cp | fini | en " Vi-compatible mode doesn't seem to like autocommands
+if &cp | finish | endif " Vi-compatible mode doesn't seem to like autocommands
 aug vimrc
 	au!
-	" au BufWritePre * sil cal<SID>RemoveWhitespace()
-
 	au FileType c,objc,python,scheme,html,xhtml,xml
 				\ nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
 	" Look up documentation for current word under cursor
-	au FileType c,objc,sh nn <buffer> <silent> <c-k> :cal <SID>Bwana()<cr>
+	au FileType c,objc,sh nn <buffer> <silent> <c-k> :cal<SID>Bwana()<cr>
 	" Shortcut for typing a semicolon at the end of a line
 	au FileType c,objc,cpp ino <buffer> <silent> ;; <c-o>:cal setline('.', getline('.').';')<cr>
 						\| setl omnifunc=ccomplete#Complete
-	au FileType c nn <buffer> <silent> ,A :exe 'e '.expand('%:p:r').'.'.(expand('%:e') == 'c' ? 'h' : 'c')<cr>
+	au FileType c nn <buffer> <silent> ,A :cal<SID>AlternateFile('c')<cr>
 
-	" compile.sh is a simple shell script I made for compiling a C/Objc
+	" compile.sh is a simple shell script I made for compiling a C/Obj-C
 	" program with gcc & running it in a new window in Terminal.app
 	au FileType c,objc setl cin fdm=syntax
 					\  mp=compile.sh\ \"%:p\"\ \"%\"\ \-\q\ -\w
+					\| nn <buffer> <silent> ,A :cal<SID>AlternateFile()<cr>
 	au FileType objc setl inc=^#import
-				\|   nn <buffer> <silent> ,A :exe 'e '.expand('%:p:r').'.'.(expand('%:e') == 'm' ? 'h' : 'm')<cr>
+				\|   nn <buffer> <silent> ,A :cal<SID>AlternateFile('m')<cr>
 
 	" Functions for converting plist files (can be binary but have xml syntax)
 	au BufReadPre,FileReadPre *.plist set bin | so ~/.vim/scripts/read_plist.vim
 
 	au FileType scheme setl et sts=2 makeprg=mzscheme\ -r\ \"%:p\"
-					\| ino jl <esc>f)a
 	au FileType python setl et sts=4 makeprg=python\ -t\ \"%:p\"
-
 	au FileType javascript setl omnifunc=javascriptcomplete#CompleteJS
 
 	" Automatically make shell & python scripts executable if they aren't already
@@ -356,9 +361,6 @@ aug vimrc
 	au BufWritePost *.\(sh\|py\) if <SID>FileExecutable("'%:p'")|exe "sil !chmod a+x '%'"|en
 	au FileType sh nn <buffer> ,r :w<cr>:!'%:p'<cr>
 	au FileType sh,python setl ar " Automatically read file when permissions are changed
-
-	au FileType asm nn <buffer> ,r :w <cr>:mak!<cr>:!./a.out<cr>
-				\|  setl mp=gcc\ -x\ assembler\ \"%:p\"
 
 	au FileType xhtml,xml so ~/.vim/ftplugin/html_autoclosetag.vim
 
