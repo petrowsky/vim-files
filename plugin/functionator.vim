@@ -21,11 +21,24 @@ fun s:GetFuncName(ft)
 		let funBegin = search('^\s*function\s\+\w\+\s*(\w*)', 'bWcen')
 		let funEnd = searchpair('^.*{', '', '}', 'n')
 		let funName = funBegin ? substitute(getline(funBegin), '^\s*function\s*\(\w\+\s*(\w*)\)\s*{\=', '\1', '') : ''
-	" NOTE: This doesn't work for nested functions, I need to figure out how to
-	" fix it
 	elseif a:ft == 'python'
-		let funBegin = search('^def', 'bWcen')
-		let funEnd = search('^\S', 'n')
+		let col = col('.')
+		" Get the first line number out of "if:", "while:", etc. statements
+		" inside the current function.
+		let funBegin = search('def.*:$', 'bWcn')
+		let lnum = line
+		while search('\(def\s\+\w\+(.\{-})\)\@<!:', 'bW') > funBegin
+			let lnum = line('.')
+		endw
+		if &et
+			let indent = '^'.repeat(' ', indent(lnum) - &sts)
+		else
+			let indent = '^'.repeat('\t', (indent(lnum) - &ts) / &ts)
+		endif
+		call cursor(lnum, col)
+		let funBegin = search(indent.'def.*:$', 'nbW')
+		let funEnd = search(indent.'\S', 'ncW')
+		call cursor(line, col)
 		if funBegin && funEnd > line
 			return [substitute(getline(funBegin), '^\s*def\s*\(\w\+\s*(.*)\):', '\1', ''), (line - funBegin)]
 		endif
