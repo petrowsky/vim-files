@@ -3,7 +3,7 @@
 " Description: Shows the name of the function the cursor is currently in when
 "              gn is pressed, and goes to the [count] line of that function when
 "              [count]gn is used.
-"              Currently supports: C, Obj-C, JavaScript, Python, Pascal and Vim.
+"              Currently supports: C, Obj-C, JavaScript, Python, and Vimscript.
 
 if exists('s:did_functionator') || &cp || version < 700
 	finish
@@ -12,17 +12,21 @@ let s:did_functionator = 1
 nn <silent> gn :<c-u>call <SID>ShowFuncName()<cr>
 
 fun s:GetFuncName(ft)
-	let line = line('.')
+	let line = line('.') | let col = col('.')
     if a:ft == 'c' || a:ft == 'objc'
-		let funBegin = search('^[^ \t#/]\{2}.*(', 'bWcen')
-		let funEnd = searchpair('^.*{', '', '}', 'n')
-		let funName = funBegin ? substitute(getline(funBegin), '\s*{', '', '') : ''
+		let funDecl = search('^\w\+.*(', 'bW')
+		if !funDecl
+			call cursor(line, col)
+			return []
+		endif
+		let funBegin = search('{')
+		let funEnd = searchpair('{', '', '}', 'W')
+		let funName = substitute(getline(funDecl), '\s*{', '', '')
 	elseif a:ft == 'javascript'
-		let funBegin = search('^\s*function\s\+\w\+\s*(\w*)', 'bWcen')
-		let funEnd = searchpair('^.*{', '', '}', 'n')
-		let funName = funBegin ? substitute(getline(funBegin), '^\s*function\s*\(\w\+\s*(\w*)\)\s*{\=', '\1', '') : ''
+		let funBegin = search('^\s*function\s\+\w\+\s*(\w*)', 'bWce')
+		let funEnd = searchpair('{', '', '}', 'n')
+		let funName = matchstr(getline(funBegin), '\w\+\s*(.*)')
 	elseif a:ft == 'python'
-		let col = col('.')
 		" Get the first line number out of "if:", "while:", etc. statements
 		" inside the current function.
 		let funBegin = search('def.*:$', 'bWcn')
@@ -38,36 +42,38 @@ fun s:GetFuncName(ft)
 		call cursor(lnum, col)
 		let funBegin = search(indent.'def.*:$', 'nbW')
 		let funEnd = search(indent.'\S', 'ncW')
-		call cursor(line, col)
-		if funBegin && funEnd > line
-			return [substitute(getline(funBegin), '^\s*def\s*\(\w\+\s*(.*)\):', '\1', ''), (line - funBegin)]
-		endif
-		return []
-	elseif a:ft == 'pascal'
-		let col = col('.')
-		let funBegin = search('^\(function\|procedure\)\s\+\w\+', 'bWce')
-		call search('^\s*begin', 'ce')
-		let funEnd = searchpair('^\s*begin', '', '^\s*end;')
-		let funName = funBegin ? getline(funBegin) : ''
-		call cursor(line, col)
+		let funName = matchstr(getline(funBegin), '\w\+(.*)')
 	elseif a:ft == 'vim'
-		let funBegin = search('^\s*fun.*$', 'bWen')
-		let funEnd = searchpair('^\s*fun%[ction]!\=', '', '^\s*endf\%[unction]!\=', 'n')
-		let funName = substitute(substitute(getline(funBegin),
-							\ '^\s*fun\%[ction]!\=\s*', '', ''), ')\zs\s*".*', '', '')
+		let funBegin = search('^\s*fun.*$', 'bWe')
+		let funEnd = searchpair('^\s*fun%[ction]!\=', '', '^\s*endf\%[unction]!\=')
+		let funName = matchstr(getline(funBegin), '\(s:\)\=\w\+(.*)')
 	endif
-	return funBegin && funEnd && funEnd >= line ? [funName, line - funBegin] : []
+	call cursor(line, col)
+	if funBegin && funEnd && funEnd > line
+		return [funName, line - funBegin, funEnd]
+	endif
+	return []
+endf
+
+fun s:Warning(msg)
+	echoh WarningMsg | echo a:msg | echoh None
+	return -1
 endf
 
 fun s:ShowFuncName()
-	let ft = stridx(&ft, '.') == -1 ? &ft : matchstr(&ft, '.\{-}\ze\.')
-	if ft !~ '^\(c\|objc\|javascript\|python\|pascal\|vim\)$' | return | endif
-	let function = s:GetFuncName(ft)
+	if &ft !~ '^\v(c|objc|javascript|python|vim)$'
+		return s:Warning('This filetype is currently not supported by functionator.vim.')
+	endif
+	let function = s:GetFuncName(&ft)
 	if empty(function)
-		echoh WarningMsg | ec 'Not in function.' | echoh None
+		return s:Warning('Not in function.')
 	elseif !v:count
-		echoh ModeMsg | ec function[0].': Line '.function[1] | echoh None
+		echoh ModeMsg | echo function[0].': Line '.function[1] | echoh None
 	else
-		call cursor(line('.') - (function[1] - v:count), 0)
+		let lnum = line('.') - (function[1] - v:count)
+		if lnum > function[2]
+			return s:Warning('Line '.lnum.' outside of function.')
+		endif
+		call cursor(lnum, 0)
 	endif
 endf
