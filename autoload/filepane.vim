@@ -35,6 +35,7 @@ fun s:CreateFilePane()
 
 	let s:sortPref = 0
 	let s:filepaneBuffer = bufnr('%')
+	let s:cursorPos = {}
 
 	f File\ List
 	setl bt=nofile bh=wipe noswf nobl nonu nowrap
@@ -73,8 +74,7 @@ fun s:CreateFilePane()
 	hi link filepaneExt Type
 endf
 
-" Goes to previous window if it exists; otherwise,
-" tries to go to 'last' window.
+" Goes to previous window if it exists; otherwise, tries to go to 'last' window.
 fun s:PreviousWindow()
 	exe winnr('#') != bufwinnr(s:filepaneBuffer) ? 'winc p' : winnr('$').'winc w'
 endf
@@ -83,7 +83,7 @@ fun s:LeaveFilePane()
 	for option in keys(s:opt)
 		exe 'let &'.option.'='.s:opt[option]
 	endfor
-	unl s:opt
+	unl s:opt s:cursorPos
 	if !exists('g:filepane_drawermode') || g:filepane_drawermode
 		q
 	else
@@ -122,6 +122,10 @@ fun s:UpdateFilePane()
 		sil exe firstFileLine.',$sort /.*\./'
 	endif
 
+	let currentDir = substitute(getcwd(), '^'.$HOME, '~', '')
+	if has_key(s:cursorPos, currentDir)
+		let cursorLine =  s:cursorPos[currentDir]
+	endif
 	call cursor(cursorLine, 1)
 	setl noma
 endf
@@ -151,6 +155,7 @@ endf
 fun s:FilePaneSelect(...)
 	let file = s:SelectedFile()
 	if isdirectory(file)
+		let s:cursorPos[substitute(getcwd(), '^'.$HOME, '~', '')] = line('.')
 		exe 'cd'.fnameescape(file)
 		call s:UpdateFilePane()
 	elseif filereadable(file)
