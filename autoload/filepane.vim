@@ -35,7 +35,6 @@ fun s:CreateFilePane()
 
 	let s:sortPref = 0
 	let s:filepaneBuffer = bufnr('%')
-	let s:cursorPos = {}
 
 	f File\ List
 	setl bt=nofile bh=wipe noswf nobl nonu nowrap
@@ -93,8 +92,11 @@ endf
 
 fun s:UpdateFilePane()
 	setl ma
+	if !exists('s:cursorPos') | let s:cursorPos = {} | endif
 	let line = 2
-	let cursorLine = line('.')
+	let currentDir = substitute(getcwd(), '^'.$HOME, '~', '')
+	let cursorLine = has_key(s:cursorPos, currentDir) 
+							\ ? s:cursorPos[currentDir] : line('.')
 	sil 1,$ d_
 	call setline(1, '..')
 
@@ -122,10 +124,6 @@ fun s:UpdateFilePane()
 		sil exe firstFileLine.',$sort /.*\./'
 	endif
 
-	let currentDir = substitute(getcwd(), '^'.$HOME, '~', '')
-	if has_key(s:cursorPos, currentDir)
-		let cursorLine =  s:cursorPos[currentDir]
-	endif
 	call cursor(cursorLine, 1)
 	setl noma
 endf
