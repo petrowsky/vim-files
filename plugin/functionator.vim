@@ -27,7 +27,7 @@ fun s:GetFuncName(ft)
 		let funEnd = searchpair('{', '', '}', 'n')
 		let funName = matchstr(getline(funBegin), '\w\+\s*(.*)')
 	elseif a:ft == 'python'
-		" Get the first line number out of "if:", "while:", etc. statements
+		" Go to the first line number out of "if:", "while:", etc. statements
 		" inside the current function.
 		let funBegin = search('def.*:$', 'bWcn')
 		let lnum = line
@@ -44,8 +44,8 @@ fun s:GetFuncName(ft)
 		let funEnd = search(indent.'\S', 'ncW')
 		let funName = matchstr(getline(funBegin), '\w\+(.*)')
 	elseif a:ft == 'vim'
-		let funBegin = search('^\s*fun.*$', 'bWe')
-		let funEnd = searchpair('^\s*fun%[ction]!\=', '', '^\s*endf\%[unction]!\=')
+		let funBegin = search('\<fu\%[nction]\>', 'bW')
+		let funEnd = searchpair('\<fu\%[nction]\>', '', '\<endf\%[unction]\>')
 		let funName = matchstr(getline(funBegin), '\(s:\)\=\w\+(.*)')
 	endif
 	call cursor(line, col)
