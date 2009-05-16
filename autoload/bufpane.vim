@@ -42,7 +42,7 @@ fun s:CreateBufPane()
 	if !exists('g:bufpane_drawermode') || g:bufpane_drawermode
 		setl bh=hide
 	endif
-	f Buffer\ List
+	sil file Buffer\ List
 
 	nn <buffer> q <c-w>q
 	nn <silent> <buffer> l :cal<SID>PreviousWindow()<cr>
@@ -118,16 +118,15 @@ fun s:UpdateBufPane(updateHelp)
 		endif
 	elseif s:helpPref
 		let w = 32
-		let line = 17
+		let line = 16
 		if a:updateHelp && (getline(1)[2] == 'P' || !g:bufpane_showhelp)
-			" Show help in lines 1 - 13.
+			" Show help in lines 1 - 12.
 			call setline(1, ['h : toggle this help', 'q : close buffer list',
 						\ 'l : return to last window', 'x : delete buffer',
 						\ 'X : force delete buffer', 'w : wipeout buffer',
 						\ 'W : force wipeout buffer', 'o : edit below last window',
 						\ 'O : edit above last window', 'v : edit in vsplit window',
-						\ '[1-9] : edit specified buffer', 's : toggle sorting',
-						\ 'p : toggle path display'])
+						\ 's : toggle sorting', 'p : toggle path display'])
 		endif
 	endif
 	if a:updateHelp && (g:bufpane_showhelp || s:helpPref)
@@ -144,9 +143,7 @@ fun s:UpdateBufPane(updateHelp)
 
 	let firstBufferLine = line
 
-	let lastBuffer = bufnr('$')
-	let i = 1
-	wh i <= lastBuffer
+	for i in range(1, bufnr('$'))
 		if bufexists(i) && i != s:bufpaneBuffer && (!g:bufpane_hideunlisted
 													\ || buflisted(i))
 			let bname = i.':	'
@@ -166,8 +163,7 @@ fun s:UpdateBufPane(updateHelp)
 			call setline(line, bname)
 			let line += 1
 		endif
-		let i += 1
-	endw
+	endfor
 
 	" If buffers have been deleted, remove the lines.
 	if line('$') >= line | sil exe line.',$ d_' | endif
@@ -234,11 +230,8 @@ fun s:BufPaneDelete(command)
 	" If buffer is currently active, switch to another one first
 	" to avoid an error message.
 	if winNum != -1
-  		let lastBuffer = bufnr('$')
-  		let found      = 0
-  		let i          = 1
-
-		wh !found && i <= lastBuffer
+		let found = 0
+		for i in range(1, bufnr('$'))
 			if buflisted(i) && i != s:bufpaneBuffer && i != num
 				if !bufmod && winbufnr(3) == -1
 					exe winNum.'winc w'
@@ -253,9 +246,9 @@ fun s:BufPaneDelete(command)
 					endif
 				endif
 				let found = 1
+				break
 			endif
-			let i += 1
-		endw
+		endfor
 	endif
 
 	if !found
