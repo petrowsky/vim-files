@@ -22,13 +22,16 @@ set tm=500 " Lower timeout for mappings
 set cot=menu " Don't show extra info on completions
 set report=0 " Always report when lines are changed
 set mouse=a " Enable mouse support
+set cwh=1
 set enc=utf-8
+set nofen
 
 if has('gui_running')
 	" Disable blinking cursor & default menus in gvim, and set font to
 	" I've also defined some custom menus in my .gvimrc.
 	set gcr=a:blinkon0 go=haMR
-	set columns=100 lines=38 fuoptions=maxvert,maxhorz
+	set columns=100 lines=38 fuoptions=maxvert,maxhorz mousefocus
+	set guifont=Deja\ Vu\ Sans\ Mono:h12
 	ino <d-i> <tab>
 endif
 
@@ -45,7 +48,6 @@ if &diff | syn off | endif " Turn syntax highlighting off for diff
 " Plugin Settings
 let snips_author = 'Michael Sanders'
 let bufpane_showhelp = 0
-ino <s-tab> <c-p>
 
 " Correct some spelling mistakes
 ia teh the
@@ -92,6 +94,8 @@ nn Q <Nop>
 " (i.e. you can move up/down in one wrapped line)
 nn j gj
 nn k gk
+nn gj j
+nn gk k
 " Keep traditional J functionality
 nn <c-h> J
 " Keep traditional K functionality
@@ -102,12 +106,11 @@ nn Y y$
 nn + <c-a>
 nn - <c-x>
 " Add a blank line while keeping cursor position
-nn <silent> <c-o> :cal append('.', '')<bar>sil! cal repeat#set("\<c-o>")<cr>
-" Make space toggle folds
-nn <space> zA
-nn <m-space> za
+nn <silent> <c-o> :pu_ <bar> cal repeat#set("\<c-o>")<cr>k
+" Keep traditional <c-o> functionality
+nn ,o <c-o>
 " Easier ways to navigate windows
-nn , <c-w>
+nm , <c-w>
 nn ,, <c-w>p
 nn ,W <c-w>w
 nn ,n :vnew<cr>
@@ -115,7 +118,6 @@ nn ,w :w<cr>
 nn ,x :x<cr>
 " Switch to alternate window (mnemonic: ,alternate)
 nn ,a <c-^>
-nn ,o <c-o>
 " Vimshell keybindings
 if !&cp && has('vimshell')
 	nn <silent> ,e :new \|vimshell! bash<cr>
@@ -170,9 +172,9 @@ ino <silent> <c-b> <c-o>b
 ino <silent> <c-f> <esc>ea
 ino <c-h> <left>
 ino <c-l> <right>
-" <c-p> & <c-n> will move/up and down if popup menu is not visible.
-ino <expr> <c-p> getline('.')[col('.')-2] =~ '\w' ? '<c-p>' : '<up>'
-ino <expr> <c-n> getline('.')[col('.')-2] =~ '\w' ? '<c-n>' : '<down>'
+" <c-p> & <c-n> will move/up and down if not on a word character.
+" ino <expr> <c-p> getline('.')[col('.')-2] =~ '\w' ? '<c-p>' : '<up>'
+" ino <expr> <c-n> getline('.')[col('.')-2] =~ '\w' ? '<c-n>' : '<down>'
 " <up> & <down> will move up/down if popup menu not up; otherwise, 
 " they will select items in the menu
 ino <expr> <up> pumvisible() ? '<c-p>' : '<c-o>gk'
@@ -184,6 +186,16 @@ ino jj <esc>
 ino <expr> jx pumvisible() ? '<esc>a' : '<c-p>'
 " Open/close omnicompletion menu
 ino <expr> jX pumvisible() ? '<esc>a' : '<c-x><c-o>'
+
+com! -nargs=0 -range Copy cal<SID>Copy()
+fun s:Copy() range
+	if mode() !=? 'v'
+		let old = @"
+		norm! gvy
+		call system('pbcopy', @")
+		let @" = old
+	endif
+endf
 
 hi OverLength ctermbg=none cterm=none
 match OverLength /\%>80v/
@@ -208,16 +220,16 @@ fun! s:CountChars()
 	let old = @"
 	sil! norm! gvy
 	let l = len(@")
-	echo l > 1 ? 'There were '.l.' characters in the selechotion.'
-			\  : 'There was 1 character in the selechotion.'
+	echo l > 1 ? 'There were '.l.' characters in the selection.'
+			\  : 'There was 1 character in the selection.'
 	let @" = old
 endf
 
 " This is a modified version of something I found on the Vim wiki.
 " It allows you to align a selection by typing ":Align {pattern}<cr>".
-com! -nargs=? -range Align <line1>,<line2>cal Align('<args>')
+com! -nargs=? -range Align <line1>,<line2>cal<SID>Align('<args>')
 xno <silent> ,a :Align<cr>
-fun! Align(regex) range
+fun! s:Align(regex) range
 	let blockmode = visualmode() !=? 'v'
 	if blockmode
 		let old = @"
@@ -235,7 +247,7 @@ fun! Align(regex) range
 		if pos > maxpos | let maxpos = pos | endif
 	endfor
 
-	call map(section, 'AlignLine(v:val, regex, maxpos)')
+	call map(section, 's:AlignLine(v:val, regex, maxpos)')
 
 	if !blockmode
 		return setline(a:firstline, section)
@@ -250,7 +262,7 @@ fun! Align(regex) range
 	endfor
 endf
 
-fun! AlignLine(line, sep, maxpos)
+fun! s:AlignLine(line, sep, maxpos)
 	let m = matchlist(a:line, '\(.\{-}\) \{-}\('.a:sep.'.*\)')
 	return empty(m) ? a:line : m[1].repeat(' ', a:maxpos - strlen(m[1])+1).m[2]
 endf
@@ -274,7 +286,6 @@ fun s:Cycle()
 endf
 
 fun! s:RemoveWhitespace()
-	if stridx(&ft, 'snippets') != -1 | return | endif
 	if &bin | return | endif
 	if search('\s\+$', 'n')
 		let line = line('.') | let col = col('.')
@@ -303,68 +314,60 @@ endf
 fun s:AlternateFile(ext)
 	let path = expand('%:p:r').'.'.(expand('%:e') == a:ext ? 'h' : a:ext)
 	if filereadable(path)
-		exe 'e'.path
+		exe 'e'.fnameescape(path)
 	else
 		echoh ErrorMsg | echo 'Alternate file not readable.' | echoh None
 	endif
 endf
 
-" Lets you make a session for a directory by typing :mks
-" Then restore it by going back to that directory, opening Vim
-" and typing :LoadSession.
-com! -bar LoadSession cal<SID>LoadSession()
-nn <F3> :cal<SID>LoadSession()
-fun! s:LoadSession()
-	so Session.vim
-	let s:sessionloaded = 1
+fun s:DefaultMake()
+	if !exists('b:old_make')
+		let b:old_make = &makeprg
+		setl makeprg=make
+		echoh ModeMsg | echo 'Switching makeprg to make' | echoh None
+	else
+		let &makeprg = b:old_make
+		unl b:old_make
+		echoh ModeMsg | echo 'Switching makeprg to default' | echoh None
+	endif
 endf
-fun! s:SaveSession()
-	if exists('s:sessionloaded') | mks! | endif
-endf
-au VimLeave * call <SID>SaveSession()
-
-" Tells whether file is executable (used for shell script autocommands).
-fun! s:FileExecutable(fname)
-  exe 'sil! !test -x' a:fname
-  return v:shell_error
-endf
+nn <silent> <c-k> :cal<SID>DefaultMake()<cr>
 
 if &cp | finish | endif " Vi-compatible mode doesn't seem to like autocommands
 aug vimrc
 	au!
-	au FileType c,objc,python,scheme,html,xhtml,xml
+	au FileType c,objc,sh,python,scheme,html,xhtml,xml
 				\ nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
 	" Look up documentation for current word under cursor
-	au FileType c,objc,sh nn <buffer> <silent> <c-k> :cal<SID>Bwana()<cr>
+	au FileType c,objc,sh nn <buffer> <silent> <c-p> :cal<SID>Bwana()<cr>
+							\| sil cal<SID>Bwana()
 	" Shortcut for typing a semicolon at the end of a line
 	au FileType c,objc,cpp ino <buffer> <silent> ;; <c-o>:cal setline('.', getline('.').';')<cr>
-						\| setl omnifunc=ccomplete#Complete
 	au FileType c nn <buffer> <silent> ,A :cal<SID>AlternateFile('c')<cr>
-
+					\| setl omnifunc=ccomplete#Complete
 	" compile.sh is a simple shell script I made for compiling a C/Obj-C
 	" program with gcc & running it in a new window in Terminal.app
-	au FileType c,objc setl cin fdm=syntax
+	au FileType c setl cin
 					\  mp=compile.sh\ \"%:p\"\ \"%\"\ \-\q\ -\w
-					\| nn <buffer> <silent> ,A :cal<SID>AlternateFile()<cr>
-	au FileType objc setl inc=^#import
+	au FileType objc setl inc=^#import omnifunc=objccomplete#Complete
 				\|   nn <buffer> <silent> ,A :cal<SID>AlternateFile('m')<cr>
 
 	" Functions for converting plist files (can be binary but have xml syntax)
 	au BufReadPre,FileReadPre *.plist set bin | so ~/.vim/scripts/read_plist.vim
 
-	au FileType scheme setl et sts=2 makeprg=mzscheme\ -r\ \"%:p\"
+	au FileType scheme setl et sts=2 mcountakeprg=csi\ -s\ \"%:p\"
 	au FileType python setl et sts=4 makeprg=python\ -t\ \"%:p\"
 	au FileType javascript setl omnifunc=javascriptcomplete#CompleteJS
 
 	" Automatically make shell & python scripts executable if they aren't already
 	" when saving file
-	au BufWritePost *.\(sh\|py\) if <SID>FileExecutable("'%:p'")|exe "sil !chmod a+x '%'"|en
-	au FileType sh nn <buffer> ,r :w<cr>:!'%:p'<cr>
+	au BufWritePost *.\(sh\|py\) if !executable("'%:p'")|exe "sil !chmod a+x '%'"|en
+	au FileType sh setl mp='%:p'
 	au FileType sh,python setl ar " Automatically read file when permissions are changed
 
 	au FileType xhtml,xml so ~/.vim/ftplugin/html_autoclosetag.vim
 
-	" ,p to preview in browser; :make to validate
+	" ,p to preview in browser, :make to validate
 	au FileType html,xhtml,xml nn <buffer> ,p :w<cr>:!open -a safari %<cr>
 							\| vno <buffer> <c-b> c<strong></strong><esc>9hp
 							\| vno <buffer> <c-e> c<em></em><esc>5hp
