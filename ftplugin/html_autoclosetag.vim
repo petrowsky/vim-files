@@ -16,14 +16,14 @@ let s:did_auto_closetag = 1
 
 " Gets the current HTML tag by the cursor.
 fun s:GetCurrentTag()
-	return matchstr(matchstr(getline('.'), 
-						\ '<\zs\(\w\|=\| \|''\|"\)*>\%'.col('.').'c'), '\a*')
+	return matchstr(matchstr(getline('.'),
+						\ '<\zs\(\w\|=\| \|''\|"\)*>\%'.col('.').'c'), '^\a*')
 endf
 
 " Cleanly return after autocompleting an html/xml tag.
 fun s:Return()
 	let tag = s:GetCurrentTag()
-	return tag != '' && match(getline('.'), '</'.tag.'>') > -1 ? 
+	return tag != '' && match(getline('.'), '</'.tag.'>') > -1 ?
 				\ "\<cr>\<cr>\<up>" : "\<cr>"
 endf
 
@@ -35,7 +35,7 @@ endf
 fun s:CountInPage(needle)
 	let pos = [line('.'), col('.')]
 	call cursor(1, 1)
-	let counter = 0
+	let counter = search(a:needle, 'Wc')
 	while search(a:needle, 'W')
 		if !s:InComment() | let counter += 1 | endif
 	endw
@@ -58,7 +58,7 @@ fun s:CloseTag()
 	" Don't autocomplete next to a word or another tag or if inside comment
 	if line[col] !~ '\w\|<\|>' && !s:InComment()
 		let tag = s:GetCurrentTag()
-		" Insert closing tag if tag is not self-closing and has not already 
+		" Insert closing tag if tag is not self-closing and has not already
 		" been closed
 		if tag != '' && tag !~ '\vimg|input|link|meta|br|hr|area|base|param|dd|dt'
 					\ && !s:ClosingTag(tag)
