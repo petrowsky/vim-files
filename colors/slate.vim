@@ -11,7 +11,7 @@
 "
 "           Colors      Bright Colors
 " Black     #4E4E4E     #7C7C7C
-" Red       #FF6C60     #FFB6B0
+" Red       #FF6C60     #EF5860
 " Green     #A8FF60     #CEFFAB
 " Yellow    #FFFFB6     #FFFFCB
 " Blue      #96CBFE     #FFFFCB
@@ -22,7 +22,7 @@
 " These are the modified colors for this theme:
 " 			Colors		Bright Colors
 " Black		#0e2231		#afb2ba (#0e2231 is used solely for highlighting lines)
-" Red		#ed1600		#f0357d
+" Red		#ed1600		#fc5a56
 " Green		#55e439		#84f796
 " Yellow	#eceb00		#f5f16e
 " Blue		#009be7		#84ffff
@@ -45,6 +45,7 @@ hi VertSplit	guifg=#f8f8f8	guibg=#0e2231	gui=none	ctermfg=gray	ctermbg=black	cte
 
 hi Visual		guibg=#abc4dd	ctermbg=cyan
 
+hi Title		guifg=#f1994a	guibg=NONE		ctermfg=magenta ctermbg=NONE
 hi WildMenu		guifg=#0e2231	guibg=#afb2ba	ctermfg=black	ctermbg=gray
 hi ErrorMsg		guifg=#f8f8f8	guibg=#ed1600	gui=bold		ctermfg=gray	ctermbg=darkred	cterm=bold
 hi WarningMsg	guifg=#f5f16e	guibg=#0e2231	gui=bold		ctermfg=yellow	ctermbg=black   cterm=bold
@@ -70,7 +71,7 @@ hi Keyword			guifg=#ffa705					ctermfg=darkmagenta
 hi PreProc			guifg=#f1994a					ctermfg=magenta
 
 hi Todo				guifg=#abc4dd	guibg=NONE		ctermfg=cyan	ctermbg=none
-hi Constant			guifg=#f0407d					ctermfg=red
+hi Constant			guifg=#fa6870					ctermfg=red
 
 hi Identifier		guifg=#f1994a					ctermfg=magenta	cterm=none
 hi Type				guifg=#f5f16e	gui=none		ctermfg=yellow
@@ -82,7 +83,7 @@ hi Delimiter		guifg=#f1994a	gui=none		ctermfg=magenta
 hi  link Number         Constant
 hi! link StatusLine     VertSplit
 hi! link StatusLineNC   VertSplit
-hi! link Identifier     Function
+" hi! link Identifier     Function
 hi! link Question       Special
 hi! link MoreMsg        Special
 hi! link Folded         Normal
