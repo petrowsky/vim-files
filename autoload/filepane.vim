@@ -36,7 +36,7 @@ fun s:CreateFilePane()
 	let s:sortPref = 0
 	let s:filepaneBuffer = bufnr('%')
 
-	f File\ List
+	sil file File\ List
 	setl bt=nofile bh=wipe noswf nobl nonu nowrap
 
 	if !exists('g:filepane_drawermode') || g:filepane_drawermode
