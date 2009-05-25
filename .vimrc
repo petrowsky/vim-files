@@ -1,38 +1,46 @@
 " Author: Michael Sanders (msanders42 [at] gmail [dot] com)
 
-set shm=atI " Disable intro screen
-set hi=50 " Only store past 50 commands
-set ul=150 " Only undo up to 150 times
-set lz " Don't redraw screen during macros
-set tf " Improves redrawing for newer computers
-set titlestring=%f title " Display filename in terminal window
-set ruf=%l:%c ru " Display current column/line in bottom right
-set sc " Show incomplete command at bottom right
-set bs=2 " Allow backspacing over anything
-set wrap lbr pt=<f2>
-set ic scs " Only be case sensitive when search contains uppercase
-ru macros/matchit.vim " Enabled extended % matching
-set nobk nowb noswf " Disable backup
-" Enable command-line tab completion & hide irrelevant matches
-set wim=full wmnu wig+=*.o,*.obj,*.pyc,*.DS_Store,*.db
-set sb " Open new split windows below current
-set gd " Assume /g flag on :s searches
-set hid " Allow hidden buffers
-set tm=500 " Lower timeout for mappings
-set cot=menu " Don't show extra info on completions
-set report=0 " Always report when lines are changed
-set mouse=a " Enable mouse support
-set cwh=1
+set shm=atI                 " Disable intro screen
+set lazyredraw              " Don't redraw screen during macros
+set ttyfast                 " Improves redrawing for newer computers
+set nobk nowb noswf         " Disable backup
+set timeoutlen=500          " Lower timeout for mappings
+set report=0                " Always report when lines are changed
+set history=50              " Only store past 50 commands
+set undolevels=150          " Only undo up to 150 times
+set titlestring=%f title    " Display filename in terminal window
+set rulerformat=%l:%c ruler " Display current column/line in bottom right
+set showcmd                 " Show incomplete command at bottom right
+set splitbelow              " Open new split windows below current
+set bs=2                    " Allow backspacing over anything
+set wrap linebreak          " Automatically break lines
+set pastetoggle=<f2>        " Use <f2> to paste in text from other apps
+set wildmode=full wildmenu  " Enable command-line tab completion
+set wildignore+=*.o,*.obj,*.pyc,*.DS_Store,*.db " Hide irrelevent matches
+set completeopt=menu        " Don't show extra info on completions
+set ignorecase smartcase    " Only be case sensitive when search contains uppercase
+set gdefault                " Assume /g flag on :s searches
+set hidden                  " Allow hidden buffers
+set mouse=a                 " Enable mouse support
 set enc=utf-8
-set nofen
+set nofoldenable
+ru macros/matchit.vim       " Enable extended % matching
 
 if has('gui_running')
-	" Disable blinking cursor & default menus in gvim, and set font to
-	" I've also defined some custom menus in my .gvimrc.
-	set gcr=a:blinkon0 go=haMR
-	set columns=100 lines=38 fuoptions=maxvert,maxhorz mousefocus
+	set guicursor=a:blinkon0 " Disable blinking cursor
+	set guioptions=haMR " Disable default menus (I've defined my own in my .gvimrc)
 	set guifont=Deja\ Vu\ Sans\ Mono:h12
-	ino <d-i> <tab>
+	set columns=100 lines=38 fuoptions=maxvert,maxhorz " Default window size
+	set mousefocus " Set splits to automatically activate when moused over
+else
+	vno "+y :<c-u>cal<SID>Copy()<cr>
+	vm "+Y "+y
+	fun s:Copy() " This could use some work, but it's okay for now...
+		let old = @"
+		norm! y
+		call system('pbcopy', @")
+		let @" = old
+	endf
 endif
 
 " Indentation
@@ -40,10 +48,11 @@ filetype plugin indent on
 set ai ts=4 sw=4
 
 " Theme
-set t_Co=16 " Enable 16 colors
-syn on | colo slate " My color scheme, adopted from TextMate
-set hls " Highlight search terms
-if &diff | syn off | endif " Turn syntax highlighting off for diff
+set t_Co=16 " Enable 16 colors in Terminal
+syntax on
+color slate " My color scheme, adopted from TextMate
+set hls     " Highlight search terms
+if &diff | syntax off | endif " Turn syntax highlighting off for diff
 
 " Plugin Settings
 let snips_author = 'Michael Sanders'
@@ -71,8 +80,8 @@ let mapleader = ','
 no 0 ^
 no ^ 0
 " Scroll down faster
-no <s-j> 2<c-e>
-no <s-k> 3<c-y>
+no J 2<c-e>
+no K 3<c-y>
 " Swap ' and ` keys (` is much more useful)
 no ` '
 no ' `
@@ -92,6 +101,7 @@ no gP "0P
 nn Q <Nop>
 " gj/gk treat wrapped lines as separate
 " (i.e. you can move up/down in one wrapped line)
+" I like that behavior better, so I invert the keys.
 nn j gj
 nn k gk
 nn gj j
@@ -109,7 +119,7 @@ nn - <c-x>
 nn <silent> <c-o> :pu_ <bar> cal repeat#set("\<c-o>")<cr>k
 " Keep traditional <c-o> functionality
 nn ,o <c-o>
-" Easier ways to navigate windows
+" Easier way to navigate windows
 nm , <c-w>
 nn ,, <c-w>p
 nn ,W <c-w>w
@@ -123,8 +133,6 @@ if !&cp && has('vimshell')
 	nn <silent> ,e :new \|vimshell! bash<cr>
 	nn <silent> ,E :vnew \| vimshell! bash<cr>
 endif
-" Standard (full-screen) shell
-nn ,S :sh<cr>
 " Switch to current dir
 nn ,d :lcd %:p:h<cr>
 " Hide/show line numbers (useful for copying & pasting)
@@ -136,8 +144,6 @@ nn <silent> <c-n> :noh<cr>
 " List whitespace
 nn <silent> ,<space>  :se nolist!<cr>
 nn <silent> ,R :cal<SID>RemoveWhitespace()<cr>
-" Reload .vimrc
-nn ,L :so $MYVIMRC<cr>
 " Make c-g show full path/buffer number too
 nn <c-g> 2<c-g>
 
@@ -172,30 +178,17 @@ ino <silent> <c-b> <c-o>b
 ino <silent> <c-f> <esc>ea
 ino <c-h> <left>
 ino <c-l> <right>
-" <c-p> & <c-n> will move/up and down if not on a word character.
-" ino <expr> <c-p> getline('.')[col('.')-2] =~ '\w' ? '<c-p>' : '<up>'
-" ino <expr> <c-n> getline('.')[col('.')-2] =~ '\w' ? '<c-n>' : '<down>'
-" <up> & <down> will move up/down if popup menu not up; otherwise, 
+ino <c-k> <c-o>D
+" <up> & <down> will move up/down if popup menu not up; otherwise,
 " they will select items in the menu
 ino <expr> <up> pumvisible() ? '<c-p>' : '<c-o>gk'
 ino <expr> <down> pumvisible() ? '<c-n>' : '<c-o>gj'
-ino <c-k> <c-o>D
 " Much easier than reaching for escape
 ino jj <esc>
 " Open/close keyword completion menu
 ino <expr> jx pumvisible() ? '<esc>a' : '<c-p>'
 " Open/close omnicompletion menu
 ino <expr> jX pumvisible() ? '<esc>a' : '<c-x><c-o>'
-
-com! -nargs=0 -range Copy cal<SID>Copy()
-fun s:Copy() range
-	if mode() !=? 'v'
-		let old = @"
-		norm! gvy
-		call system('pbcopy', @")
-		let @" = old
-	endif
-endf
 
 hi OverLength ctermbg=none cterm=none
 match OverLength /\%>80v/
@@ -267,24 +260,6 @@ fun! s:AlignLine(line, sep, maxpos)
 	return empty(m) ? a:line : m[1].repeat(' ', a:maxpos - strlen(m[1])+1).m[2]
 endf
 
-" Cycle through paste buffers
-nn <silent> <c-\> :cal<SID>Cycle()<cr>
-fun s:Cycle()
-	if !exists('s:cycling')
-		let s:cycling = 0 | let s:pasteBuf = 0
-	endif
-	if s:cycling
-		sil! norm! u
-	endif
-	let s:cycling = 1
-	exe 'norm! "'.s:pasteBuf.'p'
-	if s:pasteBuf == 9
-		let s:pasteBuf = 0
-	else
-		let s:pasteBuf += 1
-	endif
-endf
-
 fun! s:RemoveWhitespace()
 	if &bin | return | endif
 	if search('\s\+$', 'n')
@@ -294,20 +269,6 @@ fun! s:RemoveWhitespace()
 		echo 'Removed trailing whitespace.'
 	else
 		echo 'No trailing whitespace found.'
-	endif
-endf
-
-" Uses Bwana.app to open man pages in browser.
-fun! s:Bwana()
-	if !exists('b:bwana_enabled')
-		let b:bwana_enabled = 1
-		" This is just a one-line shell script that uses "open man://"
-		" I couldn't get vim to accept the colon without this.
-		setl kp=gman
-		echoh ModeMsg | echo 'Bwana man mode enabled' | echoh None
-	else
-		unl b:bwana_enabled | setl kp=man
-		echoh ModeMsg | echo 'Bwana man mode disabled' | echoh None
 	endif
 endf
 
@@ -326,7 +287,7 @@ fun s:DefaultMake()
 		setl makeprg=make
 		echoh ModeMsg | echo 'Switching makeprg to make' | echoh None
 	else
-		let &makeprg = b:old_make
+		let &l:makeprg = b:old_make
 		unl b:old_make
 		echoh ModeMsg | echo 'Switching makeprg to default' | echoh None
 	endif
@@ -338,26 +299,25 @@ aug vimrc
 	au!
 	au FileType c,objc,sh,python,scheme,html,xhtml,xml
 				\ nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
-	" Look up documentation for current word under cursor
-	au FileType c,objc,sh nn <buffer> <silent> <c-p> :cal<SID>Bwana()<cr>
-							\| sil cal<SID>Bwana()
+
+	" Use Bwana.app to open man pages in browser.
+	" This is just a one-line shell script that uses "open man://"
+	" I couldn't get vim to accept the colon without this.
+	au FileType c,objc,sh nn set makeprg=gman
+
 	" Shortcut for typing a semicolon at the end of a line
 	au FileType c,objc,cpp ino <buffer> <silent> ;; <c-o>:cal setline('.', getline('.').';')<cr>
 	au FileType c nn <buffer> <silent> ,A :cal<SID>AlternateFile('c')<cr>
-					\| setl omnifunc=ccomplete#Complete
 	" compile.sh is a simple shell script I made for compiling a C/Obj-C
 	" program with gcc & running it in a new window in Terminal.app
-	au FileType c setl cin
+	au FileType c,objc setl cin
 					\  mp=compile.sh\ \"%:p\"\ \"%\"\ \-\q\ -\w
-	au FileType objc setl inc=^#import omnifunc=objccomplete#Complete
-				\|   nn <buffer> <silent> ,A :cal<SID>AlternateFile('m')<cr>
 
 	" Functions for converting plist files (can be binary but have xml syntax)
 	au BufReadPre,FileReadPre *.plist set bin | so ~/.vim/scripts/read_plist.vim
 
 	au FileType scheme setl et sts=2 mcountakeprg=csi\ -s\ \"%:p\"
 	au FileType python setl et sts=4 makeprg=python\ -t\ \"%:p\"
-	au FileType javascript setl omnifunc=javascriptcomplete#CompleteJS
 
 	" Automatically make shell & python scripts executable if they aren't already
 	" when saving file
@@ -367,17 +327,16 @@ aug vimrc
 
 	au FileType xhtml,xml so ~/.vim/ftplugin/html_autoclosetag.vim
 
-	" ,p to preview in browser, :make to validate
-	au FileType html,xhtml,xml nn <buffer> ,p :w<cr>:!open -a safari %<cr>
+	" :make to preview in browser, ,v to validate
+	au FileType html,xhtml,xml nn <buffer> ,v :w<cr>:!xmllint --valid --noout %<cr>
 							\| vno <buffer> <c-b> c<strong></strong><esc>9hp
 							\| vno <buffer> <c-e> c<em></em><esc>5hp
-							\| setl mp=xmllint\ --valid\ --noout\ %
-							\  errorformat=%f:%l:\ %m
-							\| setl omnifunc=htmlcomplete#CompleteTags
+							\| setl makeprg=open\ -a\ safari\ %
 
 	" Look up documentation under :help instead of man for .vim files
 	au FileType vim,help let&l:kp=':help'
 	au FileType vim set ofu=syntaxcomplete#Complete
 	" I'm never using macros in help; this is much more useful
 	au FileType help nn <buffer> q <c-w>q
+				  \| nn <buffer> <c-o> <c-o>
 aug END
