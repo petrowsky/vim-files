@@ -1,6 +1,6 @@
 " File:        objc_matchbracket.vim
 " Author:      Michael Sanders (msanders42 [at] gmail [dot] com)
-" Version:     0.5
+" Version:     0.8
 " Description: TextMate's "Insert Matching Start Bracket" feature implemented
 "              in vim script. Makes it a lot more pleasant to write Objective-C.
 " Usage:       Just type "]" in insert mode after an object or method you want to
@@ -11,10 +11,9 @@ if exists('b:did_objc_mapping') || &cp || version < 700
 	finish
 endif
 let b:did_objc_mapping = 1
-ino <buffer> ] <c-r>=<SID>MatchBracket()<cr>
+ino <buffer> <silent> ] <c-r>=<SID>MatchBracket()<cr>
 
-if exists('s:did_objc_ftplugin') | finish | endif
-let s:did_objc_ftplugin = 1
+if exists('*s:MatchBracket') | finish | endif
 
 fun s:Count(haystack, needle)
     let counter = 0
@@ -28,6 +27,12 @@ endf
 
 " Automatically inserts matching bracket, TextMate style!
 fun s:MatchBracket()
+	if pumvisible()
+		call feedkeys("\<esc>a", 'n')
+		call feedkeys(']')
+		return ''
+	endif
+
 	let line = getline('.')
 	let lnum = line('.')
 	let col  = col('.') - 1
@@ -81,9 +86,9 @@ fun s:MatchBracket()
 		" Only wrap past a colon, except for special keywords such as "@selector:".
 		" E.g., "foo: bar" becomes "foo: [bar ]", "[foo]: bar" becomes
 		" "[foo]: [bar ]", and "[foo: bar]" becomes "[[foo: bar] ]"
-		let colonCol = matchend(strpart(line, semiPos), '^\s*\(\[.*\]\|[^\[]*\):')
+		let colonCol = matchend(strpart(line, semiPos), '\v^\s*(\[.*\]|[^\[]*):')
 		if colonCol > startCol && colonCol > matchend(beforeCursor,
-					\ '.*@\(selector\|operator\|ope\|control\):')
+					\ '\v.*\@(selector|operator|ope|control):')
 			let startCol = colonCol
 		endif
 
