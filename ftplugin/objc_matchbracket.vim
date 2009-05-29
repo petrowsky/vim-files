@@ -39,7 +39,13 @@ fun s:MatchBracket()
 	let before_cursor = strpart(line, 0, col)
 
 	" Only wrap past delimeters such as ";", "*", "return", etc.
-	let delimPos = matchend(before_cursor, '\v.*(^\s*|[;,|(){}!*&^%~=]|\s*return\s*)') + 1
+	" But ignore delimeters in function calls.
+	let functionPos = match(before_cursor, '\v(if|for|while)@!<\w+>\s*\(.{-}\)([;,|{}!])@!') + 1
+	if functionPos
+		let before_cursor = strpart(line, 0, functionPos)
+	endif
+
+	let delimPos = matchend(before_cursor, '\v.*(^|[;,|{}()!*&^%~=]|\s*return)\s*') + 1
 	let wrap_text = strpart(before_cursor, delimPos - 1)
 
     " These are used to tell whether the bracket is still open:
@@ -48,13 +54,13 @@ fun s:MatchBracket()
 
 	" Don't autocomplete if line is blank, if inside or directly outside
 	" string, or if inserting a matching bracket.
-	if wrap_text =~ '^\s*\S\=$' || wrap_text =~'@\=["'']\S*\s*\%'.col.'c'
-	                          \ || s:Count(line, '[') > s:Count(line, ']')
+	if wrap_text == '' || wrap_text =~'@\=["'']\S*\s*\%'.col.'c'
+	                 \ || s:Count(line, '[') > s:Count(line, ']')
 		return ']'
 	" Escape out of string when bracket is the next character, unless
 	" wrapping past a colon or equals sign, or inserting a closing bracket.
 	elseif line[col] == ']' && wrap_text !~ '\v\k+:\s*\k+(\s+\k+)+$'
-	                      \ && (before_cursor !~ '\v\[.*(\=)]'
+	                      \ && (before_cursor !~ '\[.*\(=\)]'
 		                        \ || left_brack_count != right_brack_count + 1)
 		" "]" has to be returned here or the "." command breaks.
 		call setline(lnum, substitute(line, '\%'.(col + 1).'c.', '', ''))
