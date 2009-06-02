@@ -213,7 +213,7 @@ fun s:Delete(file)
 	if isdirectory(a:file)
 		let fname = fnameescape(a:file)
 		if system('rmdir '.fname) == ''
-			return
+			return 1
 		endif
         if confirm('Directory "'.a:file.'" is not empty. Do you still want to delete it?',
 		         \ "&Delete\n&Cancel", 2) != 1
@@ -223,7 +223,7 @@ fun s:Delete(file)
 		redraw
 		return system('rm -r '.fname) == ''
 	else
-		return delete(a:file)
+		return delete(a:file) == 0
 	endif
 endf
 
