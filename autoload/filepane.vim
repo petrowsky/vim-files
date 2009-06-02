@@ -1,28 +1,30 @@
 au WinLeave File\ List cal<SID>LeaveFilePane()
 au WinEnter File\ List cal filepane#Activate()
 
-fun filepane#Activate()
-	let s:opt = {} " Save current options.
-	let s:opt['is'] = &is | let s:opt['hls'] = &hls
-	set is nohls
+let g:filepane_drawermode = exists('g:filepane_drawermode') && g:filepane_drawermode
 
+fun filepane#Activate()
 	" If filepane has already been opened, reactivate it.
-	if exists('s:filepaneBuffer') && bufexists(s:filepaneBuffer)
-		let filepaneWin = bufwinnr(s:filepaneBuffer)
-		if filepaneWin == -1
-			sil exe 'to vert sb '.s:filepaneBuffer
-			exe 'vert res'.g:filepaneWidth
+	if exists('s:filepane_buf') && bufexists(s:filepane_buf)
+		let filepane_win = bufwinnr(s:filepane_buf)
+		if filepane_win == -1
+			sil exe 'to vert sb '.s:filepane_buf
+			exe 'vert res'.g:filepane_width
 			call s:UpdateFilePane()
 		elseif winbufnr(2) == -1
 			q " If no other windows are open, quit bufpane automatically.
 		else " If filepane is out of focus, bring it back into focus.
-			exe filepaneWin.'winc w'
-			exe 'vert res'.g:filepaneWidth
+			exe filepane_win.'winc w'
+			exe 'vert res'.g:filepane_width
 		endif
 	else " Otherwise, create the filepane.
 		sil call s:CreateFilePane()
 		call s:UpdateFilePane()
 	endif
+
+	let s:opt = {} " Save current options.
+	let s:opt['is'] = &is | let s:opt['hls'] = &hls | let s:opt['cul'] = &cul
+	setl is nohls cul
 endf
 
 fun s:CreateFilePane()
@@ -30,134 +32,147 @@ fun s:CreateFilePane()
 		exe 'bw'.bufnr('%')
 	endif
 	to vnew
-	let g:filepaneWidth = exists('g:filepaneWidth') ? g:filepaneWidth : 25
-	exe 'vert res'.g:filepaneWidth
+	let g:filepane_width = exists('g:filepane_width') ? g:filepane_width : 25
+	exe 'vert res'.g:filepane_width
 
-	let s:sortPref = 0
-	let s:filepaneBuffer = bufnr('%')
+	let s:filepane_buf = bufnr('%')
+	let s:expand_dirs = {}
 
 	sil file File\ List
 	setl bt=nofile bh=wipe noswf nobl nonu nowrap
 
-	if !exists('g:filepane_drawermode') || g:filepane_drawermode
+	if g:filepane_drawermode
 		setl bh=hide
 	endif
 
-	nn <silent> <buffer> s :cal<SID>TogglePref(0)<cr>
 	nn <silent> <buffer> x :cal<SID>CustomViewFile()<cr>
-	nn <silent> <buffer> l :cal<SID>PreviousWindow()<cr>
+	nn <silent> <buffer> p :cal<SID>PreviousWindow()<cr>
 	nn <silent> <buffer> R :cal<SID>RenameFile()<cr>
-	nn <silent> <buffer> D :cal<SID>DeleteFile()<cr>
 	nn <silent> <buffer> d :cal<SID>MakeDir()<cr>
+	nn <silent> <buffer> D :cal<SID>DeleteSingleFile()<cr>
+	vno <silent> <buffer> D :cal<SID>DeleteMultipleFiles()<cr>
 
-	nm <silent> <buffer> . :cd ..<bar>cal<SID>UpdateFilePane()<cr>
+	nn <silent> <buffer> . :cal<SID>GoToParentDir()<cr>
 	nm <silent> <buffer> - :cd -<bar>cal<SID>UpdateFilePane()<cr>
 	nm <silent> <buffer> ~ :cd ~<bar>cal<SID>UpdateFilePane()<cr>
-	nn <silent> <buffer> <cr> :cal<SID>FilePaneSelect()<cr>
-	nn <silent> <buffer> o :cal<SID>FilePaneSelect(1)<cr>
-	nn <silent> <buffer> O :cal<SID>FilePaneSelect(2)<cr>
-	nn <silent> <buffer> v :cal<SID>FilePaneSelect(3)<cr>
-	nn <silent> <buffer> > <c-w>>:let g:filepaneWidth+=1<cr>
-	nn <silent> <buffer> < <c-w><:let g:filepaneWidth-=1<cr>
-	nn <buffer> <c-l> :cal<SID>UpdateFilePane()<cr>:ec "File list refreshed."<cr>
+	nn <silent> <buffer> <cr> :cal<SID>SelectFile()<cr>
+	nn <silent> <buffer> <space> :cal<SID>ChangeDir()<cr>
+	nn <silent> <buffer> o :cal<SID>SelectFile(1)<cr>
+	nn <silent> <buffer> O :cal<SID>SelectFile(2)<cr>
+	nn <silent> <buffer> v :cal<SID>SelectFile(3)<cr>
+	nn <silent> <buffer> > <c-w>>:let g:filepane_width+=1<cr>
+	nn <silent> <buffer> < <c-w><:let g:filepane_width-=1<cr>
+	nn <buffer> <c-l> :sil cal<SID>UpdateFilePane()<bar>echo "File list refreshed."<cr>
 	nn <buffer> q <c-w>q
-	nm <buffer> gL l
-	nm <buffer> p -
-	nm <buffer> h ~
-	nm <buffer> <leftmouse> <leftmouse><cr>
+	nm <buffer> gL p
+	nm <buffer> <2-leftmouse> <cr>
+	nn <buffer> <3-leftmouse> <nul>
+	nn <buffer> <4-leftmouse> <nul>
+	vm d D
+	vm x D
+	nm dd D
 
 	syn match filepaneDir '.*/$' display
 	syn match filepaneExt '.*\.\zs.*$' display
+	syn match filepaneTree '^\(| \)\+' display
 
 	hi link filepaneDir Special
 	hi link filepaneExt Type
+	hi link filepaneTree String
 endf
 
 " Goes to previous window if it exists; otherwise, tries to go to 'last' window.
 fun s:PreviousWindow()
-	exe winnr('#') != bufwinnr(s:filepaneBuffer) ? 'winc p' : winnr('$').'winc w'
+	exe winnr('#') != bufwinnr(s:filepane_buf) ? 'winc p' : winnr('$').'winc w'
 endf
 
 fun s:LeaveFilePane()
 	for option in keys(s:opt)
 		exe 'let &'.option.'='.s:opt[option]
 	endfor
-	unl s:opt s:cursorPos
-	if !exists('g:filepane_drawermode') || g:filepane_drawermode
-		q
-	else
-		unl s:filepaneBuffer
-	endif
+	unl s:opt "s:expand_dirs
+	if g:filepane_drawermode | q | endif
 endf
 
 fun s:UpdateFilePane()
 	setl ma
-	if !exists('s:cursorPos') | let s:cursorPos = {} | endif
-	let line = 2
-	let currentDir = substitute(getcwd(), '^'.$HOME, '~', '')
-	let cursorLine = has_key(s:cursorPos, currentDir) 
-							\ ? s:cursorPos[currentDir] : line('.')
+	let orig_pos = line('.')
 	sil 1,$ d_
 	call setline(1, '..')
 
 	" Move filepane's window to the left side & reset its width.
-	winc H | exe 'vert res'.g:filepaneWidth
+	winc H
+	exe 'vert res'.g:filepane_width
 
-	let firstFileLine = line
-	let lastFile = bufnr('$')
-	let currentDir = fnameescape(substitute(getcwd().'/', '//$', '/', ''))
-	let dirNameLen = len(currentDir)
+	let current_dir = fnameescape(substitute(getcwd().'/', '//$', '/', ''))
 
-	for file in split(globpath(currentDir, '*'), "\n")
-		if isdirectory(file) | let file .= '/' | endif
-		call setline(line, strpart(file, dirNameLen))
-		let line += 1
-	endfor
-	let currentDir = substitute(currentDir, '^'.$HOME, '~', '')
-	let line -= firstFileLine
-	exe 'setl stl=%<'.currentDir.'%=%l'
-	ec '"'.currentDir.'" '.line.' item'.(line == 1 ? '' : 's')
+	let line = s:DisplayFiles(2, current_dir) - 2
 
-	if s:sortPref == 1
-		sil exe firstFileLine.',$sort /\d\+/'
-	elseif s:sortPref == 2
-		sil exe firstFileLine.',$sort /.*\./'
-	endif
+	let current_dir = substitute(current_dir, '^'.$HOME, '~', '')
+	exe 'setl stl=%<'.current_dir.'%=%l'
+	echo '"'.current_dir.'" '.line.' item'.(line == 1 ? '' : 's')
 
-	call cursor(cursorLine, 1)
+	call cursor(orig_pos, 1)
 	setl noma
 endf
 
-fun s:TogglePref(toggle)
-	if !a:toggle " Toggle sort
-		let s:sortPref = (s:sortPref + 1) % 3
-		setl ma
-		if s:sortPref == 1
-			ec 'Sorting by name.'
-			sil exe '2,$sort /\d\+/'
-		elseif s:sortPref == 2
-			ec 'Sorting by extension.'
-			sil exe '2,$sort /.*\./'
-		else
-			call s:UpdateFilePane()
+fun s:DisplayFiles(start_line, dir, ...)
+	let dirnamelen = len(a:dir)
+	let line = a:start_line
+	let bars = repeat('| ', a:0 ? a:1 : 0)
+	for file in split(globpath(a:dir, '*'), "\n")
+		if isdirectory(file) | let file .= '/' | endif
+		call setline(line, bars.strpart(file, dirnamelen))
+		let line += 1
+		if has_key(s:expand_dirs, file)
+			let line = s:DisplayFiles(line, file, a:0 ? a:1 + 1 : 1)
 		endif
-		setl noma
-	endif
+	endfor
+	return line
+endf
+
+fun s:ParentDirs(file)
+	let orig_pos = line('.')
+	let bars = matchstr(a:file, '^\(| \)*')
+	let file = strpart(a:file, len(bars))
+	while bars != ''
+		let bars = bars[2:]
+		call search('^'.bars.'[^|]', 'bW')
+		let file = strpart(getline('.'), len(bars)).file
+	endw
+	call cursor(orig_pos, 1)
+	return file
 endf
 
 fun s:SelectedFile()
-	let currentDir = substitute(getcwd().'/', '//$', '/', '')
-	return currentDir.getline('.')
+	let current_dir = substitute(getcwd().'/', '//$', '/', '')
+	let file = getline('.')
+	if file =~ '^| '
+		let file = s:ParentDirs(file)
+	endif
+	return current_dir.file
 endf
 
-fun s:FilePaneSelect(...)
+fun s:SelectFile(...)
 	let file = s:SelectedFile()
 	if isdirectory(file)
-		let s:cursorPos[substitute(getcwd(), '^'.$HOME, '~', '')] = line('.')
-		exe 'cd'.fnameescape(file)
+		if file[-2:] == '..'
+			cd ..
+		elseif has_key(s:expand_dirs, file)
+			call remove(s:expand_dirs, file)
+		else
+			let s:expand_dirs[file] = 1
+		endif
 		call s:UpdateFilePane()
+		if empty(globpath(fnameescape(file), '*')) " This is kind of inefficient but oh well
+			redraw
+			echo 'Directory "'.substitute(file, '^'.$HOME, '~', '').'" is empty.'
+		endif
 	elseif filereadable(file)
+		let drawermode = g:filepane_drawermode
+		let g:filepane_drawermode = 0
 		winc p
+
 		if a:0 && a:1 < 3
 			let splitbelow = &sb
 			exe 'let &sb = '.(a:1 == 1).' | sp | let &sb ='.splitbelow
@@ -165,27 +180,78 @@ fun s:FilePaneSelect(...)
 			vnew
 		endif
 		exe 'e'.fnameescape(file)
+		winc p
+		let g:filepane_drawermode = drawermode
 	else
 		echo 'Could not read file '.file
 	endif
 endf
 
+fun s:GoToParentDir()
+	let bars = matchstr(getline('.'), '^\(| \)*')
+	if bars == ''
+		call cursor(1, 1)
+	else
+		let orig_pos = line('.')
+		call search('^'.bars[2:].'[^|]', 'bW')
+	endif
+endf
+
+fun s:ChangeDir()
+	exe 'cd'.fnameescape(s:SelectedFile())
+	call s:UpdateFilePane()
+endf
+
 fun s:RenameFile()
 	let file = s:SelectedFile()
 	call rename(file, input('Rename "'.strpart(file, strridx(file, '/') + 1).
-						\   '" to '))
+	                    \   '" to '))
 	sil call s:UpdateFilePane()
 endf
 
-fun s:DeleteFile()
-	let file = s:SelectedFile()
-	if isdirectory(file)
-		echo '"'.file.'" is a directory.'
-	elseif confirm('Delete file "'.file.'"?', "&Delete\n&Cancel", 2) == 1
+fun s:Delete(file)
+	if isdirectory(a:file)
+		let fname = fnameescape(a:file)
+		if system('rmdir '.fname) == ''
+			return
+		endif
+        if confirm('Directory "'.a:file.'" is not empty. Do you still want to delete it?',
+		         \ "&Delete\n&Cancel", 2) != 1
+			redraw
+			return
+		endif
 		redraw
-		echo 'File "'.file.'" '.(delete(file) ? 'could not be' : 'was').' deleted'
-		sil call s:UpdateFilePane()
+		return system('rm -r '.fname) == ''
+	else
+		return delete(a:file)
 	endif
+endf
+
+fun s:DeleteSingleFile()
+	let file = s:SelectedFile()
+	if confirm('Delete "'.file.'"?', "&Delete\n&Cancel", 2) != 1
+		return -1
+	endif
+	redraw " Get rid of any previously echoed messages
+	let name = isdirectory(file) ? 'Directory' : 'File'
+	echo name.' "'.file.'" '.(s:Delete(file) ? 'was' : 'could not be').' deleted'
+	sil call s:UpdateFilePane()
+endf
+
+fun s:DeleteMultipleFiles() range
+	let filecount = (a:lastline - a:firstline) + 1
+	if filecount == 1 | return s:DeleteSingleFile() | endif
+	if confirm('Delete '.filecount.' files?', "&Delete\n&Cancel", 2) != 1
+		return
+	endif
+	for file in getline(a:firstline, a:lastline)
+		if !s:Delete(file)
+			echo '"'.file.'" could not be deleted'
+		endif
+	endfor
+	redraw
+	echo filecount.' files were deleted'
+	sil call s:UpdateFilePane()
 endf
 
 fun s:MakeDir()
@@ -208,7 +274,7 @@ fun s:CustomViewFile()
 			return
 		endif
 	endif
-	let file = s:SelectedFile()
+	let file = fnameescape(s:SelectedFile())
 	sil exe '!'.g:filepane_viewer.' '.file
 	redraw! " Skip enter prompt
 endf
