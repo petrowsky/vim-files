@@ -1,5 +1,7 @@
 " Author: Michael Sanders (msanders42 [at] gmail [dot] com)
 
+" ino <c-space> <c-x><c-o>
+" ino <Nul> <C-x><C-o>
 set shm=atI                 " Disable intro screen
 set lazyredraw              " Don't redraw screen during macros
 set ttyfast                 " Improves redrawing for newer computers
@@ -33,11 +35,11 @@ if has('gui_running')
 	set columns=100 lines=38 fuoptions=maxvert,maxhorz " Default window size
 	set mousefocus " Set splits to automatically activate when moused over
 else
-	vno "+y :<c-u>cal<SID>Copy()<cr>
+	vno <silent> "+y :<c-u>cal<SID>Copy()<cr>
 	vm "+Y "+y
-	fun s:Copy() " This could use some work, but it's okay for now...
+	fun s:Copy()
 		let old = @"
-		norm! y
+		norm! gvy
 		call system('pbcopy', @")
 		let @" = old
 	endf
@@ -55,8 +57,9 @@ set hls     " Highlight search terms
 if &diff | syntax off | endif " Turn syntax highlighting off for diff
 
 " Plugin Settings
-let snips_author = 'Michael Sanders'
+let snips_author     = 'Michael Sanders'
 let bufpane_showhelp = 0
+let objc_man_key     = "\<c-l>"
 
 " Correct some spelling mistakes
 ia teh the
@@ -128,13 +131,8 @@ nn ,w :w<cr>
 nn ,x :x<cr>
 " Switch to alternate window (mnemonic: ,alternate)
 nn ,a <c-^>
-" Vimshell keybindings
-if !&cp && has('vimshell')
-	nn <silent> ,e :new \|vimshell! bash<cr>
-	nn <silent> ,E :vnew \| vimshell! bash<cr>
-endif
 " Switch to current dir
-nn ,d :lcd %:p:h<cr>
+nn ,D :lcd %:p:h<cr>
 " Hide/show line numbers (useful for copying & pasting)
 nn <silent> ,# :se invnumber<cr>
 " Highlight/unhighlight lines over 80 columns
@@ -298,12 +296,12 @@ if &cp | finish | endif " Vi-compatible mode doesn't seem to like autocommands
 aug vimrc
 	au!
 	au FileType c,objc,sh,python,scheme,html,xhtml,xml
-				\ nn <buffer> <silent> ,r :w<cr>:lcd %:p:h<cr>:mak!<cr>
+	          \ nn <buffer> <silent> ,r :w<bar>lcd %:p:h<bar>mak!<cr>
 
 	" Use Bwana.app to open man pages in browser.
 	" This is just a one-line shell script that uses "open man://"
 	" I couldn't get vim to accept the colon without this.
-	au FileType c,objc,sh nn set makeprg=gman
+	au FileType c,objc,sh set keywordprg=gman
 
 	" Shortcut for typing a semicolon at the end of a line
 	au FileType c,objc,cpp ino <buffer> <silent> ;; <c-o>:cal setline('.', getline('.').';')<cr>
@@ -311,12 +309,12 @@ aug vimrc
 	" compile.sh is a simple shell script I made for compiling a C/Obj-C
 	" program with gcc & running it in a new window in Terminal.app
 	au FileType c,objc setl cin
-					\  mp=compile.sh\ \"%:p\"\ \"%\"\ \-\q\ -\w
+	                     \  mp=compile.sh\ \"%:p\"\ \"%\"\ \-\q\ -\w
 
 	" Functions for converting plist files (can be binary but have xml syntax)
 	au BufReadPre,FileReadPre *.plist set bin | so ~/.vim/scripts/read_plist.vim
 
-	au FileType scheme setl et sts=2 mcountakeprg=csi\ -s\ \"%:p\"
+	au FileType scheme setl et sts=2 makeprg=csi\ -s\ \"%:p\"
 	au FileType python setl et sts=4 makeprg=python\ -t\ \"%:p\"
 
 	" Automatically make shell & python scripts executable if they aren't already
@@ -329,14 +327,16 @@ aug vimrc
 
 	" :make to preview in browser, ,v to validate
 	au FileType html,xhtml,xml nn <buffer> ,v :w<cr>:!xmllint --valid --noout %<cr>
-							\| vno <buffer> <c-b> c<strong></strong><esc>9hp
-							\| vno <buffer> <c-e> c<em></em><esc>5hp
-							\| setl makeprg=open\ -a\ safari\ %
+	                        \| vno <buffer> <c-b> c<strong></strong><esc>9hp
+	                        \| vno <buffer> <c-e> c<em></em><esc>5hp
+	                        \| setl makeprg=open\ -a\ safari\ %:p
 
 	" Look up documentation under :help instead of man for .vim files
 	au FileType vim,help let&l:kp=':help'
-	au FileType vim set ofu=syntaxcomplete#Complete
 	" I'm never using macros in help; this is much more useful
 	au FileType help nn <buffer> q <c-w>q
 				  \| nn <buffer> <c-o> <c-o>
+
+	" Start cmdwindow (q: or q/) in insert mode.
+	au CmdwinEnter * startinsert
 aug END
