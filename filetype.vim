@@ -3,3 +3,4 @@ au BufRead,BufNewFile *.m,*.h setf objc
 au BufRead,BufNewFile *.dict setf dict
 au BufRead,BufNewFile *.applescript setf applescript
 au BufRead,BufNewFile *.todo setf todo
+au BufRead,BufNewFile .vimperatorrc setf vim
