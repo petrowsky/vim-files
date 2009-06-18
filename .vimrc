@@ -1,6 +1,11 @@
 " Original by: Michael Sanders (msanders42 [at] gmail [dot] com)
 " Adapted for personal use by Matt Petrowsky
 
+" Here are some good resources to know about
+" http://www.vim.org/htmldoc/quickref.html (quickreference on vim.org)
+" http://cscope.sourceforge.net/cscope_vim_tutorial.html (cscope)
+" http://www.vim.org/scripts/script.php?script_id=273 (taglist plugin)
+
 " ino <c-space> <c-x><c-o>
 " ino <Nul> <C-x><C-o>
 
@@ -46,9 +51,9 @@ set enc=utf-8
 " Indenting
 " =========
 filetype plugin indent on   " Use indent settings per filetype (if specified)
-set ai ts=4 sw=4            " Autoindent - tab spaces / shift width
+set ai ts=2 sw=4            " Autoindent - tab spaces / shift width
 set smartindent             " Smart indent on
-set expandtab               " Tabs converted to spaces
+set expandtab!              " Tabs converted to spaces
 
 " Navigation
 " ==========
@@ -202,6 +207,8 @@ xno <bs> "_x
 "------------- Pressing gn in visual mode counts characters in selection
 xno gn :<c-u>cal<SID>CountChars()<cr>
 
+" INSERT MODE MAPPINGS
+" ====================
 "------------- Easier navigation in insert mode
 ino <silent> <c-b> <c-o>b
 ino <silent> <c-f> <esc>ea
@@ -221,6 +228,36 @@ ino <expr> jX pumvisible() ? '<esc>a' : '<c-x><c-o>'
 
 hi OverLength ctermbg=none cterm=none
 match OverLength /\%>80v/
+
+" PHP Stuff
+" =========
+" found this stuff at http://phpslacker.com/2009/02/05/vim-tips-for-php-programmers/
+
+" highlights interpolated variables in sql strings and does sql-syntax highlighting. yay
+autocmd FileType php let php_sql_query=1
+" does exactly that. highlights html inside of php strings
+autocmd FileType php let php_htmlInStrings=1
+" discourages use oh short tags. c'mon its deprecated remember
+autocmd FileType php let php_noShortTags=1
+" automagically folds functions & methods. this is getting IDE-like isn't it?
+autocmd FileType php let php_folding=1
+" set auto-highlighting of matching brackets for php only
+autocmd FileType php DoMatchParen
+autocmd FileType php hi MatchParen ctermbg=blue guibg=lightblue
+" set "make" command when editing php files
+set makeprg=php\ -l\ %
+set errorformat=%m\ in\ %f\ on\ line\ %l
+
+" Autocomplete
+" ============
+
+" autocomplete funcs and identifiers for languages
+autocmd FileType python set omnifunc=pythoncomplete#Complete
+autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
+autocmd FileType html set omnifunc=htmlcomplete#CompleteTags
+autocmd FileType css set omnifunc=csscomplete#CompleteCSS
+autocmd FileType xml set omnifunc=xmlcomplete#CompleteTags
+autocmd FileType php set omnifunc=phpcomplete#CompletePHP
 
 " Functions
 " =========
