@@ -342,8 +342,8 @@ fun! s:RemoveWhitespace()
 	endif
 endf
 
-map <C-\> :tab split<CR>:exec("tag ".expand("<cword>"))<CR>
-map <C-[> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
+"map <C-\> :tab split<CR>:exec("tag ".expand("<cword>"))<CR>
+"map <C-[> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
 
 "fun s:AlternateFile(ext)
 "	let path = expand('%:p:r').'.'.(expand('%:e') == a:ext ? 'h' : a:ext)
